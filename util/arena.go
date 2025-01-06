@@ -13,7 +13,7 @@ const (
 	kBlockSize = 4096
 )
 
-func newArena(size uint32) *Arena {
+func NewArena(size uint32) *Arena {
 	return &Arena{
 		alloc_offset: 1,
 		blocks:       make([]byte, size),
@@ -22,7 +22,7 @@ func newArena(size uint32) *Arena {
 
 // Allocate allocates a memory block of the given size.
 // Return the beginning offset of the memory block.
-func (a *Arena) allocate(size uint32) uint32 {
+func (a *Arena) Allocate(size uint32) uint32 {
 	offset := atomic.AddUint32(&a.alloc_offset, uint32(size))
 	blocks_size := uint32(len(a.blocks))
 	if offset > blocks_size {
@@ -41,4 +41,8 @@ func (a *Arena) allocateFallback(size uint32) {
 	newBlocks := make([]byte, blocks_size+grow_size)
 	copy(newBlocks, a.blocks)
 	a.blocks = newBlocks
+}
+
+func (a *Arena) Get(offset uint32, size uint32) []byte {
+	return a.blocks[offset : offset+size]
 }

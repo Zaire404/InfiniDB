@@ -1,0 +1,2 @@
+# Arena
+由于一个Arena一般对应一个MemTable，一个MemTable不会太大，所以在Arena中的offset用uint32存储
