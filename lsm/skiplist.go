@@ -37,14 +37,13 @@ func decodeValue(value uint64) (offset uint32, size uint32) {
 }
 
 func newNode(arena *util.Arena, key []byte, v util.ValueStruct, height uint32) *node {
-	valueSize := len(v.Value)
-	valueOffset := arena.Allocate(uint32(valueSize))
+	valueOffset := putValue(arena, v)
 	keySize := len(key)
 	keyOffset := arena.Allocate(uint32(keySize))
 	nodeOffset := putNode(arena, height)
 
 	node := getNode(arena, nodeOffset)
-	node.value = encodeValue(valueOffset, uint32(valueSize))
+	node.value = encodeValue(valueOffset, v.EncodedSize())
 	node.keySize = uint32(keySize)
 	node.keyOffset = keyOffset
 	node.height = height
@@ -54,6 +53,13 @@ func newNode(arena *util.Arena, key []byte, v util.ValueStruct, height uint32) *
 func putNode(arena *util.Arena, height uint32) uint32 {
 	size := (height + 5) * uint32Size
 	offset := arena.Allocate(size)
+	return offset
+}
+
+func putValue(arena *util.Arena, v util.ValueStruct) uint32 {
+	size := v.EncodedSize()
+	offset := arena.Allocate(size)
+	v.EncodeValue(arena.Get(offset, size))
 	return offset
 }
 

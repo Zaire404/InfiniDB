@@ -1,6 +1,27 @@
 package util
 
+import "encoding/binary"
+
 type ValueStruct struct {
 	Value    []byte
-	ExpireAt int64
+	ExpireAt uint64
+}
+
+func (v *ValueStruct) EncodedSize() uint32 {
+	return uint32(len(v.Value)) + sizeVarint(v.ExpireAt)
+}
+
+func sizeVarint(v uint64) uint32 {
+	size := uint32(1)
+	for v >= 128 {
+		v >>= 7
+		size++
+	}
+	return size
+}
+
+// EncodeValue encodes the value struct into the byte slice.
+func (v *ValueStruct) EncodeValue(b []byte) uint32 {
+	sz := binary.PutUvarint(b, v.ExpireAt)
+	return uint32(sz + copy(b[sz:], v.Value))
 }
