@@ -2,4 +2,4 @@ Value的Size在实际场景中小数字的使用率远大于大数字，因此�
 # Varint编码
 每个字节都设置了最高有效位msb，msb为1表示后面还有属于当前数据的字节，msb为0表示这个字节是这个数据的最后一个字节。
 最低有效字节在前，所有Varint编码后的数据的字节是按照小端排序的。
-ValueStruct 被编码的顺序是先ExpireAt再是Value
+ValueStruct 被编码的顺序是先ExpireAt再是Value, 只有ExpireAt才采用Varint编码
