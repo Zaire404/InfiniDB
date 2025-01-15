@@ -1,14 +1,18 @@
 package lsm
 
 import (
+	"bytes"
+	"math"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/Zaire404/ZDB/util"
 )
 
 const (
-	maxHeight  = 12
-	uint32Size = uint32(unsafe.Sizeof(uint32(0)))
+	maxHeight      = 20
+	uint32Size     = uint32(unsafe.Sizeof(uint32(0)))
+	heightIncrease = math.MaxUint32 / 3
 )
 
 type node struct {
@@ -22,10 +26,14 @@ type node struct {
 	next      [maxHeight]uint32
 }
 
-type skiplist struct {
+type SkipList struct {
 	height     uint32
-	headOffset uint64
+	headOffset uint32
 	arena      *util.Arena
+}
+
+func (n *node) key(arena *util.Arena) []byte {
+	return arena.Get(n.keyOffset, n.keySize)
 }
 
 func encodeValue(offset uint32, size uint32) uint64 {
@@ -37,15 +45,13 @@ func decodeValue(value uint64) (offset uint32, size uint32) {
 }
 
 func newNode(arena *util.Arena, key []byte, v util.ValueStruct, height uint32) *node {
-	valueSize := len(v.Value)
-	valueOffset := arena.Allocate(uint32(valueSize))
-	keySize := len(key)
-	keyOffset := arena.Allocate(uint32(keySize))
+	valueOffset := putValue(arena, v)
+	keyOffset := putKey(arena, key)
 	nodeOffset := putNode(arena, height)
 
 	node := getNode(arena, nodeOffset)
-	node.value = encodeValue(valueOffset, uint32(valueSize))
-	node.keySize = uint32(keySize)
+	node.value = encodeValue(valueOffset, v.EncodedSize())
+	node.keySize = uint32(len(key))
 	node.keyOffset = keyOffset
 	node.height = height
 	return node
@@ -57,7 +63,32 @@ func putNode(arena *util.Arena, height uint32) uint32 {
 	return offset
 }
 
+func putKey(arena *util.Arena, key []byte) uint32 {
+	size := len(key)
+	offset := arena.Allocate(uint32(size))
+	copy(arena.Get(offset, uint32(size)), key)
+	return offset
+}
+
+func putValue(arena *util.Arena, v util.ValueStruct) uint32 {
+	size := v.EncodedSize()
+	offset := arena.Allocate(size)
+	v.EncodeValue(arena.Get(offset, size))
+	return offset
+}
+
+func (n *node) getNextOffset(level int) uint32 {
+	return atomic.LoadUint32(&n.next[level])
+}
+
+func (n *node) casNextOffset(level int, old uint32, new uint32) bool {
+	return atomic.CompareAndSwapUint32(&n.next[level], old, new)
+}
+
 func getNode(arena *util.Arena, offset uint32) *node {
+	if offset == 0 {
+		return nil
+	}
 	return (*node)(unsafe.Pointer(&arena.Get(offset, 1)[0]))
 }
 
@@ -65,12 +96,113 @@ func getNodeOffset(arena *util.Arena, node *node) uint32 {
 	return uint32(uintptr(unsafe.Pointer(node)) - uintptr(unsafe.Pointer(&arena.Get(0, 1)[0])))
 }
 
-func newSkiplist(arenaSize uint32) *skiplist {
+func NewSkipList(arenaSize uint32) *SkipList {
 	arena := util.NewArena(arenaSize)
 	head := newNode(arena, nil, util.ValueStruct{}, maxHeight)
-	return &skiplist{
-		headOffset: uint64(getNodeOffset(arena, head)),
+	return &SkipList{
+		headOffset: getNodeOffset(arena, head),
 		arena:      arena,
 		height:     1,
 	}
+}
+
+func (sl *SkipList) getHeight() uint32 {
+	return atomic.LoadUint32(&sl.height)
+}
+
+// findSplice finds the node before and after the target key.
+func (sl *SkipList) findSpliceForLevel(level int, key []byte, prev uint32) (uint32, uint32) {
+	for {
+		prevNode := getNode(sl.arena, prev)
+		next := prevNode.getNextOffset(level)
+		nextNode := getNode(sl.arena, next)
+		if nextNode == nil {
+			return prev, next
+		}
+		nextKey := nextNode.key(sl.arena)
+		if bytes.Compare(nextKey, key) > 0 {
+			return prev, next
+		} else if bytes.Equal(nextKey, key) {
+			return next, next
+		}
+		prev = next
+	}
+}
+
+func (sl *SkipList) Add(e *util.Entry) {
+	// Find the insertion point.
+	prev := make([]uint32, maxHeight+1)
+	next := make([]uint32, maxHeight+1)
+	// before := sl.headOffset
+	prev[sl.getHeight()] = sl.headOffset
+	for i := int(sl.height) - 1; i >= 0; i-- {
+		prev[i], next[i] = sl.findSpliceForLevel(i, e.Key, prev[i+1])
+		if prev[i] == next[i] {
+			// The key already exists.
+			node := getNode(sl.arena, prev[i])
+			valueOffset := putValue(sl.arena, e.Value)
+			node.value = encodeValue(valueOffset, e.Value.EncodedSize())
+			return
+		}
+	}
+
+	// Insert the new node.
+	height := randomHeight()
+	newNode := newNode(sl.arena, e.Key, e.Value, uint32(height))
+	oldHeight := sl.getHeight()
+	for height > oldHeight {
+		// CAS to update the height of the skiplist.
+		if atomic.CompareAndSwapUint32(&sl.height, oldHeight, height) {
+			break
+		}
+		oldHeight = sl.getHeight()
+	}
+
+	newNodeOffset := getNodeOffset(sl.arena, newNode)
+	for i := 0; i < int(height); i++ {
+		for {
+			// CAS is no need here because the newNode is not visible to other goroutines.
+			newNode.next[i] = next[i]
+			prevNode := getNode(sl.arena, prev[i])
+			if prevNode == nil {
+				// Height exceeds the old height of the skiplist.
+				prev[i], next[i] = sl.findSpliceForLevel(i, e.Key, sl.headOffset)
+				prevNode = getNode(sl.arena, prev[i])
+			}
+			if prevNode.casNextOffset(i, next[i], newNodeOffset) {
+				break
+			} else {
+				// Recompute the prev and next.
+				prev[i], next[i] = sl.findSpliceForLevel(i, e.Key, prev[i])
+			}
+		}
+	}
+
+}
+
+//go:linkname FastRand runtime.fastrand
+func FastRand() uint32
+
+// Todo with probability
+func randomHeight() (height uint32) {
+	height = 1
+	for height < maxHeight && FastRand() <= heightIncrease {
+		height++
+	}
+	return height
+}
+
+// Search searches the key in the skiplist.
+func (sl *SkipList) Search(key []byte) (vs util.ValueStruct) {
+	prev := sl.headOffset
+	for i := int(sl.height) - 1; i >= 0; i-- {
+		prev, _ = sl.findSpliceForLevel(i, key, prev)
+	}
+	node := getNode(sl.arena, prev)
+
+	if bytes.Equal(node.key(sl.arena), key) {
+		offset, size := decodeValue(node.value)
+		vs.DecodeValue(sl.arena.Get(offset, size))
+	}
+	return vs
 }
