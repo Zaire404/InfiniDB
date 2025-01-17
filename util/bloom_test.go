@@ -1,6 +1,9 @@
 package util
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestSmallBloomFilter(t *testing.T) {
 	var hash []uint32
@@ -87,16 +90,22 @@ loop:
 }
 
 func BenchmarkBloomFilter(b *testing.B) {
-	const n = 1000000
-	const maxLenKey = 40
-	keys := make([]uint32, 0, n)
-	for i := 0; i < n; i++ {
-		keys = append(keys, Hash([]byte(GetRandomString(GetRandomInt(maxLenKey)))))
-	}
-	bf := NewBloomFilter(keys, 0.01)
-	for _, key := range keys {
-		if bf.MayContain(key) != true {
-			b.Errorf("BloomFilter should contain %d", key)
-		}
+	falsePositiveRates := []float64{0.001, 0.01, 0.1}
+
+	for _, fpr := range falsePositiveRates {
+		b.Run(fmt.Sprintf("FPR_%.3f", fpr), func(b *testing.B) {
+			const n = 100000
+			const maxLenKey = 40
+			keys := make([]uint32, 0, n)
+			for i := 0; i < n; i++ {
+				keys = append(keys, Hash([]byte(GetRandomString(GetRandomInt(maxLenKey)))))
+			}
+			bf := NewBloomFilter(keys, fpr)
+			for _, key := range keys {
+				if bf.MayContain(key) != true {
+					b.Errorf("BloomFilter should contain %d", key)
+				}
+			}
+		})
 	}
 }

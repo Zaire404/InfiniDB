@@ -5,10 +5,11 @@ import (
 )
 
 const (
-	log2       float64 = 0.6931471805599453
-	minNumBits uint32  = 64
-	minNumHash uint32  = 1
-	maxNumHash uint32  = 30
+	log2          float64 = 0.6931471805599453
+	minNumBits    uint32  = 64
+	minNumHash    uint32  = 1
+	maxNumHash    uint32  = 30
+	minBitsPerKey         = 1
 )
 
 // ┌────────────┬───────────┐
@@ -52,8 +53,8 @@ func NewBloomFilter(keys []uint32, fp float64) *BloomFilter {
 func bitsPerKey(numKeys uint32, fp float64) uint32 {
 	size := -1 * float64(numKeys) * math.Log(fp) / math.Pow(log2, 2)
 	locs := math.Ceil(size / float64(numKeys))
-	if locs < 0 {
-		locs = 0
+	if locs < minBitsPerKey {
+		locs = minBitsPerKey
 	}
 	return uint32(locs)
 }
