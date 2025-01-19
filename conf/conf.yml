@@ -1,0 +1,6 @@
+log:
+  level: debug
+  mode:
+    - console
+    - file
+  path: ./logs
