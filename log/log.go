@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"strconv"
@@ -24,7 +25,7 @@ func Init() {
 }
 
 func initialize() {
-	Logger = log.NewWithOptions(os.Stderr, log.Options{
+	Logger = log.NewWithOptions(getLogOutput(), log.Options{
 		ReportCaller:    true,
 		ReportTimestamp: true,
 		TimeFormat:      time.RFC3339Nano,
@@ -45,6 +46,19 @@ func initialize() {
 		Logger.SetLevel(log.DebugLevel)
 	}
 	Logger.Debugf("log level: %v", level)
+}
+
+func getLogOutput() io.Writer {
+	output := config.GetString("log.output")
+	switch output {
+	case "stdout":
+		return os.Stdout
+	case "stderr":
+		return os.Stderr
+	default:
+		// Default to stderr if not specified
+		return os.Stderr
+	}
 }
 
 func HandleError(err error) {

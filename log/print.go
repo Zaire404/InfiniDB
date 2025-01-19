@@ -1,6 +1,9 @@
 package log
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Color string
 
@@ -34,6 +37,9 @@ func HighlightString(color Color, str string) string {
 }
 
 func StructToString(s interface{}) string {
-	v, _ := json.Marshal(s)
+	v, err := json.Marshal(s)
+	if err != nil {
+		return fmt.Sprintf("ERROR marshaling to JSON: %v", err)
+	}
 	return string(v)
 }
