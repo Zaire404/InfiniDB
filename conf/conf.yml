@@ -3,4 +3,5 @@ log:
   mode:
     - console
     - file
+  output: stderr
   path: ./logs
