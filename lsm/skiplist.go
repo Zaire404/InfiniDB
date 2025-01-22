@@ -212,8 +212,7 @@ func (sl *SkipList) Search(key []byte) (vs util.ValueStruct, err error) {
 	}
 	node := getNode(sl.arena, prev)
 	if bytes.Equal(node.key(sl.arena), key) {
-		offset, size := decodeValue(node.value)
-		vs.DecodeValue(sl.arena.Get(offset, size))
+		vs = node.vs(sl.arena)
 	} else {
 		err = util.ErrKeyNotFound
 	}
@@ -251,10 +250,7 @@ func (s *SkipListIterator) Key() []byte {
 }
 
 func (s *SkipListIterator) Value() util.ValueStruct {
-	offset, size := decodeValue(s.nd.value)
-	var vs util.ValueStruct
-	vs.DecodeValue(s.sl.arena.Get(offset, size))
-	return vs
+	return s.nd.vs(s.sl.arena)
 }
 
 func (s *SkipListIterator) Next() {
