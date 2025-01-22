@@ -2,6 +2,7 @@ package lsm
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -10,27 +11,89 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Draw plot Skiplist, align represents align the same node in different level
+func (s *SkipList) Draw(align bool) {
+	reverseTree := make([][]string, s.getHeight())
+	head := getNode(s.arena, s.headOffset)
+	for level := int(s.getHeight()) - 1; level >= 0; level-- {
+		next := head
+		for {
+			var nodeStr string
+			next = s.getNext(next, level)
+			if next != nil {
+				key := next.key(s.arena)
+				vs := next.vs(s.arena)
+				nodeStr = fmt.Sprintf("%s(%s)", key, vs.Value)
+			} else {
+				break
+			}
+			reverseTree[level] = append(reverseTree[level], nodeStr)
+		}
+	}
+
+	// align
+	if align && s.getHeight() > 1 {
+		baseFloor := reverseTree[0]
+		for level := 1; level < int(s.getHeight()); level++ {
+			pos := 0
+			for _, ele := range baseFloor {
+				if pos == len(reverseTree[level]) {
+					break
+				}
+				if ele != reverseTree[level][pos] {
+					newStr := strings.Repeat("-", len(ele))
+					reverseTree[level] = append(reverseTree[level][:pos+1], reverseTree[level][pos:]...)
+					reverseTree[level][pos] = newStr
+				}
+				pos++
+			}
+		}
+	}
+
+	// plot
+	for level := int(s.getHeight()) - 1; level >= 0; level-- {
+		fmt.Printf("%d: ", level)
+		for pos, ele := range reverseTree[level] {
+			if pos == len(reverseTree[level])-1 {
+				fmt.Printf("%s  ", ele)
+			} else {
+				fmt.Printf("%s->", ele)
+			}
+		}
+		fmt.Println()
+	}
+}
 func TestSkipListBasicCRUD(t *testing.T) {
 	list := NewSkipList(1000)
 
 	//Put & Get
 	entry1 := util.NewEntry([]byte(util.GetRandomString(10)), []byte("Val1"))
 	list.Add(entry1)
-	vs := list.Search(entry1.Key)
+	vs, _ := list.Search(entry1.Key)
 	assert.Equal(t, entry1.Value, vs)
 
 	entry2 := util.NewEntry([]byte(util.GetRandomString(10)), []byte("Val2"))
 	list.Add(entry2)
-	vs = list.Search(entry2.Key)
+	vs, _ = list.Search(entry2.Key)
 	assert.Equal(t, entry2.Value, vs)
 
 	//Get a not exist entry
-	assert.Nil(t, list.Search([]byte(util.GetRandomString(10))).Value)
+	vs, _ = list.Search([]byte(util.GetRandomString(10)))
+	assert.Nil(t, vs.Value)
 
 	//Update a entry
 	entry2_new := util.NewEntry(entry1.Key, []byte("Val1+1"))
 	list.Add(entry2_new)
-	assert.Equal(t, entry2_new.Value, list.Search(entry2_new.Key))
+	vs, _ = list.Search(entry2_new.Key)
+	assert.Equal(t, entry2_new.Value, vs)
+
+	// Test duplicate keys
+	entry3 := util.NewEntry([]byte("DuplicateKey"), []byte("Value1"))
+	list.Add(entry3)
+	entry4 := util.NewEntry([]byte("DuplicateKey"), []byte("Value2"))
+	list.Add(entry4)
+	vs, _ = list.Search([]byte("DuplicateKey"))
+	assert.Equal(t, entry4.Value, vs)
 }
 
 func Benchmark_SkipListBasicCRUD(b *testing.B) {
@@ -44,7 +107,7 @@ func Benchmark_SkipListBasicCRUD(b *testing.B) {
 		key, val = util.GetRandomString(10), fmt.Sprintf("Val%d", i)
 		entry := util.NewEntry([]byte(key), []byte(val))
 		list.Add(entry)
-		searchVal := list.Search([]byte(key))
+		searchVal, _ := list.Search([]byte(key))
 		assert.Equal(b, searchVal.Value, []byte(val))
 	}
 }
@@ -70,7 +133,7 @@ func TestConcurrentBasic(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			v := l.Search(key(i))
+			v, _ := l.Search(key(i))
 			require.EqualValues(t, key(i), v.Value)
 		}(i)
 	}
@@ -98,10 +161,74 @@ func Benchmark_ConcurrentBasic(b *testing.B) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			v := l.Search(key(i))
+			v, _ := l.Search(key(i))
 			require.EqualValues(b, key(i), v.Value)
 			require.NotNil(b, v)
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestSkipListIterator(t *testing.T) {
+	list := NewSkipList(100000)
+
+	// empty case
+	iter := list.NewSkipListIterator()
+	assert.False(t, iter.Valid())
+	iter.Rewind()
+	assert.False(t, iter.Valid())
+	iter.Seek([]byte("key"))
+	assert.False(t, iter.Valid())
+	iter.SeekForPrev([]byte("key"))
+	assert.False(t, iter.Valid())
+
+	//Put & Get
+	entry1 := util.NewEntry([]byte(util.GetRandomString(10)), []byte(util.GetRandomString(10)))
+	list.Add(entry1)
+	vs, err := list.Search(entry1.Key)
+	require.NoError(t, err)
+	assert.Equal(t, entry1.Value.Value, vs.Value)
+
+	entry2 := util.NewEntry([]byte(util.GetRandomString(10)), []byte(util.GetRandomString(10)))
+	list.Add(entry2)
+	vs, err = list.Search(entry2.Key)
+	require.NoError(t, err)
+	assert.Equal(t, entry2.Value.Value, vs.Value)
+
+	//Update a entry
+	entry2_new := util.NewEntry([]byte(util.GetRandomString(10)), []byte(util.GetRandomString(10)))
+	list.Add(entry2_new)
+	vs, err = list.Search(entry2_new.Key)
+	require.NoError(t, err)
+	assert.Equal(t, entry2_new.Value.Value, vs.Value)
+
+	list.Draw(false)
+
+	// Test iterator over multiple entries
+	iter.Rewind()
+	assert.True(t, iter.Valid())
+	count := 0
+	for iter.Valid() {
+		count++
+		iter.Next()
+	}
+	assert.Equal(t, 3, count) // We added 3 entries
+
+	// Test iterator seek
+	iter.Seek(entry1.Key)
+	assert.True(t, iter.Valid())
+	assert.Equal(t, entry1.Key, iter.Item().Key)
+
+	iter.Seek(entry2.Key)
+	assert.True(t, iter.Valid())
+	assert.Equal(t, entry2.Key, iter.Item().Key)
+
+	// Test SeekForPrev
+	iter.SeekForPrev(entry2.Key)
+	assert.True(t, iter.Valid())
+	assert.Equal(t, entry2.Key, iter.Item().Key)
+
+	for iter.Rewind(); iter.Valid(); iter.Next() {
+		t.Logf("iter key %s, value %s", iter.Item().Key, string(iter.Item().Value.Value))
+	}
 }

@@ -36,6 +36,13 @@ func (n *node) key(arena *util.Arena) []byte {
 	return arena.Get(n.keyOffset, n.keySize)
 }
 
+func (n *node) vs(arena *util.Arena) util.ValueStruct {
+	offset, size := decodeValue(n.value)
+	var vs util.ValueStruct
+	vs.DecodeValue(arena.Get(offset, size))
+	return vs
+}
+
 func encodeValue(offset uint32, size uint32) uint64 {
 	return uint64(offset)<<32 | uint64(size)
 }
@@ -110,6 +117,11 @@ func (sl *SkipList) getHeight() uint32 {
 	return atomic.LoadUint32(&sl.height)
 }
 
+// getNext returns the next node of the given node at the given level.
+func (sl *SkipList) getNext(nd *node, level int) *node {
+	return getNode(sl.arena, nd.getNextOffset(level))
+}
+
 // findSplice finds the node before and after the target key.
 func (sl *SkipList) findSpliceForLevel(level int, key []byte, prev uint32) (uint32, uint32) {
 	for {
@@ -138,7 +150,7 @@ func (sl *SkipList) Add(e *util.Entry) {
 	for i := int(sl.height) - 1; i >= 0; i-- {
 		prev[i], next[i] = sl.findSpliceForLevel(i, e.Key, prev[i+1])
 		if prev[i] == next[i] {
-			// The key already exists.
+			// The key already exists.Only update the value.
 			node := getNode(sl.arena, prev[i])
 			valueOffset := putValue(sl.arena, e.Value)
 			node.value = encodeValue(valueOffset, e.Value.EncodedSize())
@@ -193,16 +205,114 @@ func randomHeight() (height uint32) {
 }
 
 // Search searches the key in the skiplist.
-func (sl *SkipList) Search(key []byte) (vs util.ValueStruct) {
+func (sl *SkipList) Search(key []byte) (vs util.ValueStruct, err error) {
 	prev := sl.headOffset
 	for i := int(sl.height) - 1; i >= 0; i-- {
 		prev, _ = sl.findSpliceForLevel(i, key, prev)
 	}
 	node := getNode(sl.arena, prev)
-
 	if bytes.Equal(node.key(sl.arena), key) {
-		offset, size := decodeValue(node.value)
-		vs.DecodeValue(sl.arena.Get(offset, size))
+		vs = node.vs(sl.arena)
+	} else {
+		err = util.ErrKeyNotFound
 	}
-	return vs
+	return vs, err
+}
+
+func (sl *SkipList) MemSize() uint32 {
+	return sl.arena.Size()
+}
+
+type SkipListIterator struct {
+	sl *SkipList
+	nd *node
+}
+
+func (sl *SkipList) NewSkipListIterator() *SkipListIterator {
+	return &SkipListIterator{
+		sl: sl,
+	}
+}
+
+func (s *SkipListIterator) Valid() bool {
+	return s.nd != nil
+}
+
+func (s *SkipListIterator) Item() *util.Entry {
+	return &util.Entry{
+		Key:   s.Key(),
+		Value: s.Value(),
+	}
+}
+
+func (s *SkipListIterator) Key() []byte {
+	return s.nd.key(s.sl.arena)
+}
+
+func (s *SkipListIterator) Value() util.ValueStruct {
+	return s.nd.vs(s.sl.arena)
+}
+
+func (s *SkipListIterator) Next() {
+	if s.nd != nil {
+		s.nd = getNode(s.sl.arena, s.nd.next[0])
+	}
+}
+
+func (s *SkipListIterator) Prev() {
+	if s.nd == nil {
+		return
+	}
+	prev := s.sl.headOffset
+	for i := int(s.sl.height) - 1; i >= 0; i-- {
+		prev, _ = s.sl.findSpliceForLevel(i, s.nd.key(s.sl.arena), prev)
+	}
+	s.nd = getNode(s.sl.arena, prev)
+}
+
+func (s *SkipListIterator) Rewind() {
+	s.SeekToFirst()
+}
+
+// Seek moves the iterator to the first entry with a key >= target.
+func (s *SkipListIterator) Seek(key []byte) {
+	prev := s.sl.headOffset
+	for i := int(s.sl.height) - 1; i >= 0; i-- {
+		prev, _ = s.sl.findSpliceForLevel(i, key, prev)
+	}
+	s.nd = getNode(s.sl.arena, prev)
+	if bytes.Equal(s.Key(), key) {
+		return
+	} else {
+		s.Next()
+	}
+
+}
+
+// SeekForPrev moves the iterator to the last entry with a key <= target.
+func (s *SkipListIterator) SeekForPrev(key []byte) {
+	prev := s.sl.headOffset
+	for i := int(s.sl.height) - 1; i >= 0; i-- {
+		prev, _ = s.sl.findSpliceForLevel(i, key, prev)
+	}
+	if prev == s.sl.headOffset {
+		s.nd = nil
+		return
+	}
+	s.nd = getNode(s.sl.arena, prev)
+	if bytes.Compare(s.Key(), key) > 0 {
+		s.Prev()
+	}
+}
+
+func (s *SkipListIterator) SeekToFirst() {
+	s.nd = s.sl.getNext(getNode(s.sl.arena, s.sl.headOffset), 0)
+}
+
+func (s *SkipListIterator) SeekToLast() {
+	prev := s.sl.headOffset
+	for i := int(s.sl.height) - 1; i >= 0; i-- {
+		prev, _ = s.sl.findSpliceForLevel(i, nil, prev)
+	}
+	s.nd = getNode(s.sl.arena, prev)
 }
