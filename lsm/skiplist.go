@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	. "github.com/Zaire404/ZDB/error"
 	"github.com/Zaire404/ZDB/util"
 )
 
@@ -214,7 +215,7 @@ func (sl *SkipList) Search(key []byte) (vs util.ValueStruct, err error) {
 	if bytes.Equal(node.key(sl.arena), key) {
 		vs = node.vs(sl.arena)
 	} else {
-		err = util.ErrKeyNotFound
+		err = ErrKeyNotFound
 	}
 	return vs, err
 }
