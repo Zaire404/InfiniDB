@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Zaire404/ZDB/util"
+	"github.com/Zaire404/InfiniDB/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,12 +70,12 @@ func TestSkipListBasicCRUD(t *testing.T) {
 	entry1 := util.NewEntry([]byte(util.GetRandomString(10)), []byte("Val1"))
 	list.Add(entry1)
 	vs, _ := list.Search(entry1.Key)
-	assert.Equal(t, entry1.Value, vs)
+	assert.Equal(t, entry1.ValueStruct, vs)
 
 	entry2 := util.NewEntry([]byte(util.GetRandomString(10)), []byte("Val2"))
 	list.Add(entry2)
 	vs, _ = list.Search(entry2.Key)
-	assert.Equal(t, entry2.Value, vs)
+	assert.Equal(t, entry2.ValueStruct, vs)
 
 	//Get a not exist entry
 	vs, _ = list.Search([]byte(util.GetRandomString(10)))
@@ -85,7 +85,7 @@ func TestSkipListBasicCRUD(t *testing.T) {
 	entry2_new := util.NewEntry(entry1.Key, []byte("Val1+1"))
 	list.Add(entry2_new)
 	vs, _ = list.Search(entry2_new.Key)
-	assert.Equal(t, entry2_new.Value, vs)
+	assert.Equal(t, entry2_new.ValueStruct, vs)
 
 	// Test duplicate keys
 	entry3 := util.NewEntry([]byte("DuplicateKey"), []byte("Value1"))
@@ -93,7 +93,7 @@ func TestSkipListBasicCRUD(t *testing.T) {
 	entry4 := util.NewEntry([]byte("DuplicateKey"), []byte("Value2"))
 	list.Add(entry4)
 	vs, _ = list.Search([]byte("DuplicateKey"))
-	assert.Equal(t, entry4.Value, vs)
+	assert.Equal(t, entry4.ValueStruct, vs)
 }
 
 func Benchmark_SkipListBasicCRUD(b *testing.B) {
@@ -187,20 +187,20 @@ func TestSkipListIterator(t *testing.T) {
 	list.Add(entry1)
 	vs, err := list.Search(entry1.Key)
 	require.NoError(t, err)
-	assert.Equal(t, entry1.Value.Value, vs.Value)
+	assert.Equal(t, entry1.ValueStruct.Value, vs.Value)
 
 	entry2 := util.NewEntry([]byte(util.GetRandomString(10)), []byte(util.GetRandomString(10)))
 	list.Add(entry2)
 	vs, err = list.Search(entry2.Key)
 	require.NoError(t, err)
-	assert.Equal(t, entry2.Value.Value, vs.Value)
+	assert.Equal(t, entry2.ValueStruct.Value, vs.Value)
 
 	//Update a entry
 	entry2_new := util.NewEntry([]byte(util.GetRandomString(10)), []byte(util.GetRandomString(10)))
 	list.Add(entry2_new)
 	vs, err = list.Search(entry2_new.Key)
 	require.NoError(t, err)
-	assert.Equal(t, entry2_new.Value.Value, vs.Value)
+	assert.Equal(t, entry2_new.ValueStruct.Value, vs.Value)
 
 	list.Draw(false)
 
@@ -229,6 +229,6 @@ func TestSkipListIterator(t *testing.T) {
 	assert.Equal(t, entry2.Key, iter.Item().Key)
 
 	for iter.Rewind(); iter.Valid(); iter.Next() {
-		t.Logf("iter key %s, value %s", iter.Item().Key, string(iter.Item().Value.Value))
+		t.Logf("iter key %s, value %s", iter.Item().Key, string(iter.Item().ValueStruct.Value))
 	}
 }

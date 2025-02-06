@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	. "github.com/Zaire404/ZDB/error"
-	"github.com/Zaire404/ZDB/util"
+	. "github.com/Zaire404/InfiniDB/error"
+	"github.com/Zaire404/InfiniDB/util"
 )
 
 const (
@@ -153,15 +153,15 @@ func (sl *SkipList) Add(e *util.Entry) {
 		if prev[i] == next[i] {
 			// The key already exists.Only update the value.
 			node := getNode(sl.arena, prev[i])
-			valueOffset := putValue(sl.arena, e.Value)
-			node.value = encodeValue(valueOffset, e.Value.EncodedSize())
+			valueOffset := putValue(sl.arena, e.ValueStruct)
+			node.value = encodeValue(valueOffset, e.ValueStruct.EncodedSize())
 			return
 		}
 	}
 
 	// Insert the new node.
 	height := randomHeight()
-	newNode := newNode(sl.arena, e.Key, e.Value, uint32(height))
+	newNode := newNode(sl.arena, e.Key, e.ValueStruct, uint32(height))
 	oldHeight := sl.getHeight()
 	for height > oldHeight {
 		// CAS to update the height of the skiplist.
@@ -241,8 +241,8 @@ func (s *SkipListIterator) Valid() bool {
 
 func (s *SkipListIterator) Item() *util.Entry {
 	return &util.Entry{
-		Key:   s.Key(),
-		Value: s.Value(),
+		Key:         s.Key(),
+		ValueStruct: s.Value(),
 	}
 }
 

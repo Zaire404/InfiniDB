@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "./;proto"; 
+
+message BlockOffset{
+    bytes key = 1;
+    uint32 offset =2;
+    uint32 len = 3;
+}
+
+message IndexTable{
+    repeated BlockOffset offsets = 1;
+    bytes bloomFilter = 2;
+    uint32 keyCount = 3;
+}

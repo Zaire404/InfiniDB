@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Zaire404/ZDB/config"
+	"github.com/Zaire404/InfiniDB/config"
 	"github.com/charmbracelet/log"
 )
 
@@ -29,7 +29,7 @@ func initialize() {
 		ReportCaller:    true,
 		ReportTimestamp: true,
 		TimeFormat:      time.RFC3339Nano,
-		Prefix:          "ZDB",
+		Prefix:          "",
 	})
 
 	level := config.GetString("log.level")

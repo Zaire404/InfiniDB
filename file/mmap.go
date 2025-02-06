@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Zaire404/ZDB/util"
+
+	. "github.com/Zaire404/InfiniDB/error"
+	"github.com/Zaire404/InfiniDB/util"
+
 	"github.com/pkg/errors"
 )
 
@@ -66,4 +69,11 @@ func (m *MmapFile) Close() error {
 		return fmt.Errorf("while munmap file: %s, error: %v", m.Fd.Name(), err)
 	}
 	return m.Fd.Close()
+}
+
+func (m *MmapFile) Bytes(off, sz int) ([]byte, error) {
+	if len(m.Data[off:]) < sz {
+		return nil, ErrReadOutOfBound
+	}
+	return m.Data[off : off+sz], nil
 }
