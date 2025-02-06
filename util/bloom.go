@@ -94,3 +94,7 @@ func (bf *BloomFilter) insert(key uint32, numHash uint32, numBits uint32) {
 func (bf *BloomFilter) Len() int {
 	return len(*bf)
 }
+
+func (bf *BloomFilter) Bytes() []byte {
+	return []byte(*bf)
+}

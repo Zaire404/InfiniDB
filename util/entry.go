@@ -33,14 +33,14 @@ func (v *ValueStruct) EncodeValue(b []byte) uint32 {
 }
 
 type Entry struct {
-	Key   []byte
-	Value ValueStruct
+	Key         []byte
+	ValueStruct ValueStruct
 }
 
 func NewEntry(key []byte, value []byte) *Entry {
 	return &Entry{
 		Key: key,
-		Value: ValueStruct{
+		ValueStruct: ValueStruct{
 			Value: value,
 		},
 	}

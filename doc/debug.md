@@ -4,7 +4,7 @@
 === RUN   TestConcurrentBasic
 --- PASS: TestConcurrentBasic (12.00s)
 PASS
-ok      github.com/Zaire404/ZDB/lsm     12.002s
+ok      github.com/Zaire404/InfiniDB/lsm     12.002s
 ```
 修改前
 ```go

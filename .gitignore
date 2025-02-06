@@ -3,3 +3,6 @@ go.work
 
 # VSCode
 .vscode
+
+# test
+work_test
