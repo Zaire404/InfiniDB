@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 
+
 	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/util"
+
 	"github.com/pkg/errors"
 )
 
