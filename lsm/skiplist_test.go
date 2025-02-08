@@ -173,13 +173,11 @@ func TestSkipListIterator(t *testing.T) {
 	list := NewSkipList(100000)
 
 	// empty case
-	iter := list.NewSkipListIterator()
+	iter := list.NewIterator()
 	assert.False(t, iter.Valid())
 	iter.Rewind()
 	assert.False(t, iter.Valid())
 	iter.Seek([]byte("key"))
-	assert.False(t, iter.Valid())
-	iter.SeekForPrev([]byte("key"))
 	assert.False(t, iter.Valid())
 
 	//Put & Get
@@ -217,18 +215,9 @@ func TestSkipListIterator(t *testing.T) {
 	// Test iterator seek
 	iter.Seek(entry1.Key)
 	assert.True(t, iter.Valid())
-	assert.Equal(t, entry1.Key, iter.Item().Key)
+	assert.Equal(t, entry1.Key, iter.Item().Entry().Key)
 
 	iter.Seek(entry2.Key)
 	assert.True(t, iter.Valid())
-	assert.Equal(t, entry2.Key, iter.Item().Key)
-
-	// Test SeekForPrev
-	iter.SeekForPrev(entry2.Key)
-	assert.True(t, iter.Valid())
-	assert.Equal(t, entry2.Key, iter.Item().Key)
-
-	for iter.Rewind(); iter.Valid(); iter.Next() {
-		t.Logf("iter key %s, value %s", iter.Item().Key, string(iter.Item().ValueStruct.Value))
-	}
+	assert.Equal(t, entry2.Key, iter.Item().Entry().Key)
 }

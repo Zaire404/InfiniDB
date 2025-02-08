@@ -45,3 +45,7 @@ func NewEntry(key []byte, value []byte) *Entry {
 		},
 	}
 }
+
+func (e *Entry) Entry() *Entry {
+	return e
+}

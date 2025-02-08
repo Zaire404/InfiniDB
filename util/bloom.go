@@ -32,6 +32,11 @@ func (bf *BloomFilter) MayContain(key uint32) bool {
 	return true
 }
 
+func (bf *BloomFilter) MayContainKey(key []byte) bool {
+	hash := Hash(key)
+	return bf.MayContain(hash)
+}
+
 // NewBloomFilter creates a new BloomFilter with the given keys and false positive probability.
 // keys is hash values of the keys to be inserted (murMurHash3_x86_32).
 func NewBloomFilter(keys []uint32, fp float64) *BloomFilter {

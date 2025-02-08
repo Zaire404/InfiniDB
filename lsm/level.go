@@ -1,6 +1,8 @@
 package lsm
 
 import (
+	"bytes"
+	"sort"
 	"sync/atomic"
 
 	. "github.com/Zaire404/InfiniDB/error"
@@ -15,8 +17,8 @@ type levelManager struct {
 
 type levelController struct {
 	levelNumber int
-	tables      []*Table
-	size        uint64
+	tables      []*Table // tables should be sorted by fid in ascending order
+	size        int64
 }
 
 func newLevelManager(opt *Options) *levelManager {
@@ -42,15 +44,16 @@ func (lm *levelManager) flush(immutable *MemTable) error {
 	sstName := util.GenSSTName(nextFID)
 	sstPath := lm.opt.WorkDir + "/" + sstName
 	builder := newTableBuilder(lm.opt)
-	iter := immutable.sl.NewSkipListIterator()
+	iter := immutable.sl.NewIterator()
 	for iter.Rewind(); iter.Valid(); iter.Next() {
-		builder.add(iter.Item())
+		builder.add(iter.Item().Entry())
 	}
 	table, err := openTable(lm, sstPath, builder)
 	if err != nil {
 		return err
 	}
 
+	// tables is sorted by fid in ascending order
 	lm.levels[0].addTable(table)
 
 	// TODO: add table to manifest
@@ -60,13 +63,17 @@ func (lm *levelManager) flush(immutable *MemTable) error {
 func (lm *levelManager) Get(key []byte) (*util.Entry, error) {
 	var entry *util.Entry
 	var err error
-	entry, err = lm.levels[0].Get(key)
-	return entry, err
+	for i := 0; i < int(lm.opt.MaxLevelNum); i++ {
+		if entry, err = lm.levels[i].Get(key); err == nil {
+			return entry, nil
+		}
+	}
+	return nil, ErrKeyNotFound
 }
 
 func (lc *levelController) addTable(table *Table) {
 	lc.tables = append(lc.tables, table)
-	atomic.AddUint64(&lc.size, 1)
+	atomic.AddInt64(&lc.size, 1)
 }
 
 func (lc levelController) Get(key []byte) (*util.Entry, error) {
@@ -78,8 +85,9 @@ func (lc levelController) Get(key []byte) (*util.Entry, error) {
 }
 
 func (lc *levelController) searchL0(key []byte) (*util.Entry, error) {
-	for _, table := range lc.tables {
-		if entry, err := table.Search(key); err == nil {
+	// tables is sorted by fid in ascending order
+	for i := len(lc.tables) - 1; i >= 0; i-- {
+		if entry, err := lc.tables[i].Search(key); err == nil {
 			return entry, nil
 		}
 	}
@@ -87,5 +95,17 @@ func (lc *levelController) searchL0(key []byte) (*util.Entry, error) {
 }
 
 func (lc *levelController) serachLn(key []byte) (*util.Entry, error) {
-	return nil, nil
+	if lc.size > 0 && (bytes.Compare(key, lc.tables[0].sst.MinKey()) < 0 ||
+		bytes.Compare(key, lc.tables[len(lc.tables)-1].sst.MaxKey()) > 0) {
+		return nil, ErrKeyNotFound
+	}
+
+	index := sort.Search((int)(lc.size), func(i int) bool {
+		return bytes.Compare(key, lc.tables[i].sst.MaxKey()) < 1
+	})
+	if index < int(lc.size) && bytes.Compare(key, lc.tables[index].sst.MinKey()) >= 0 {
+		return lc.tables[index].Search(key)
+	}
+
+	return nil, ErrKeyNotFound
 }

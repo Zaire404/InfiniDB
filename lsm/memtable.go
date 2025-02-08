@@ -1,7 +1,6 @@
 package lsm
 
 import (
-	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/util"
 )
 
@@ -28,8 +27,5 @@ func (m *MemTable) set(entry *util.Entry) {
 
 func (m *MemTable) get(key []byte) (*util.Entry, error) {
 	vs, err := m.sl.Search(key)
-	if err != nil {
-		return &util.Entry{Key: key, ValueStruct: vs}, err
-	}
-	return nil, ErrKeyNotFound
+	return &util.Entry{Key: key, ValueStruct: vs}, err
 }

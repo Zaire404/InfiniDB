@@ -31,6 +31,10 @@ func OpenSSTable(opt *Options) (*SSTable, error) {
 	return sst, nil
 }
 
+func (sst SSTable) HasBloomFilter() bool {
+	return sst.hasBloomFilter
+}
+
 func (sst *SSTable) Init() error {
 	err := sst.initIndexTable()
 	if err != nil {
@@ -43,7 +47,7 @@ func (sst *SSTable) Init() error {
 	sst.minKey = make([]byte, len(baseKey))
 	copy(sst.minKey, baseKey)
 
-	// TODO: maxKey
+	// maxKey is set in openTable
 
 	return nil
 }
@@ -84,7 +88,7 @@ func (sst *SSTable) initIndexTable() error {
 		panic(err)
 	}
 	if !util.VerifyCheckSum(indexData, indexChecksum) {
-		return errors.New("VerifyCheckSum failed")
+		return ErrChecksum
 	}
 	sst.indexTable = &proto.IndexTable{}
 	err = proto.Unmarshal(indexData, sst.indexTable)
@@ -112,4 +116,16 @@ func (sst *SSTable) Bytes(off int, sz int) ([]byte, error) {
 
 func (sst *SSTable) MinKey() []byte {
 	return sst.minKey
+}
+
+func (sst *SSTable) MaxKey() []byte {
+	return sst.maxKey
+}
+
+func (sst *SSTable) SetMaxKey(key []byte) {
+	sst.maxKey = key
+}
+
+func (sst *SSTable) IndexTable() *proto.IndexTable {
+	return sst.indexTable
 }
