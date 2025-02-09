@@ -31,6 +31,7 @@ func OpenSSTable(opt *Options) (*SSTable, error) {
 	return sst, nil
 }
 
+
 func (sst SSTable) HasBloomFilter() bool {
 	return sst.hasBloomFilter
 }
@@ -46,6 +47,7 @@ func (sst *SSTable) Init() error {
 	baseKey := blockOffsets[0].GetKey()
 	sst.minKey = make([]byte, len(baseKey))
 	copy(sst.minKey, baseKey)
+
 
 	// maxKey is set in openTable
 

@@ -39,6 +39,7 @@ func (lsm *LSM) Set(entry *util.Entry) error {
 	return nil
 }
 
+
 func (lsm *LSM) Get(key []byte) (*util.Entry, error) {
 	entry, err := lsm.memTable.get(key)
 	if err == nil {
