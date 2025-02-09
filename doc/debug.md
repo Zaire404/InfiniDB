@@ -71,3 +71,24 @@ if prevNode.casNextOffset(i, next[i], newNodeOffset) {
 	prev[i], next[i] = sl.findSpliceForLevel(i, e.Key, prev[i])
 }
 ```
+
+## 由于append导致的错误
+原baseKey=key58,overlap=3,经过RecoverKey变成key99
+原函数
+```go
+func RecoverKey(baseKey []byte, diffKey []byte, overlap uint16) []byte {
+	return append(baseKey[:overlap], diffKey...)
+}
+```
+修改后
+```go
+func RecoverKey(baseKey []byte, diffKey []byte, overlap uint16) []byte {
+	newKey := make([]byte, int(overlap)+len(diffKey))
+	copy(newKey, baseKey[:overlap])
+	copy(newKey[overlap:], diffKey)
+	return newKey
+}
+```
+通常情况下，会使用a=append(a,b)
+但事实上如果a足够大，那么append(a,b)会直接修改a,a不够大时，append会创建一个新的切片返回
+key58变为key99是因为baseKey足够大

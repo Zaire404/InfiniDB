@@ -6,6 +6,14 @@ func BytesToUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
 
+func BytesToUint32Slice(b []byte) []uint32 {
+	u := make([]uint32, len(b)/4)
+	for i := 0; i < len(b); i += 4 {
+		u[i/4] = binary.LittleEndian.Uint32(b[i:])
+	}
+	return u
+}
+
 func BytesToUint64(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
 }

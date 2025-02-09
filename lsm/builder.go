@@ -1,10 +1,13 @@
 package lsm
 
 import (
+	"bytes"
 	"encoding/binary"
+	"io"
 	"math"
 	"os"
 
+	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/file"
 	"github.com/Zaire404/InfiniDB/proto"
 	"github.com/Zaire404/InfiniDB/util"
@@ -21,9 +24,10 @@ type tableBuilder struct {
 }
 
 type block struct {
-	baseKey      []byte
-	arena        *util.Arena
-	entryOffsets []uint32
+	baseKey        []byte
+	arena          *util.Arena
+	entryOffsets   []uint32
+	entryEndOffset uint32
 }
 
 type header struct {
@@ -64,6 +68,8 @@ func (tb *tableBuilder) commitCurBlock() {
 		// Only the last commit caused by a flush is likely to enter this condition
 		return
 	}
+
+	tb.curBlock.entryEndOffset = tb.curBlock.arena.Size()
 	// Fill the remaining part of the data block format:
 	// - [entryOffsets]
 	// - [entryOffsetsLen]
@@ -219,4 +225,120 @@ func (h *header) encode() []byte {
 func (h *header) decode(data []byte) {
 	h.overlap = binary.LittleEndian.Uint16(data[:2])
 	h.diff = binary.LittleEndian.Uint16(data[2:])
+}
+
+func (b *block) RecoverFromArena() error {
+	// checksumLen
+	offset := b.arena.Size()
+	offset -= 4
+	buf := b.arena.Get(offset, 4)
+	checksumLen := util.BytesToUint32(buf)
+
+	// checksum
+	offset -= checksumLen
+	checksum := b.arena.Get(offset, checksumLen)
+	if !util.VerifyCheckSum(b.arena.Get(0, offset), checksum) {
+		return ErrChecksum
+	}
+
+	// entryOffsetsLen
+	offset -= 4
+	buf = b.arena.Get(offset, 4)
+	entryOffsetsLen := util.BytesToUint32(buf)
+
+	// entryOffsets
+	offset -= entryOffsetsLen * 4
+	buf = b.arena.Get(offset, entryOffsetsLen*4)
+	b.entryOffsets = util.BytesToUint32Slice(buf)
+	// the first entry offset is 1 because the arena is initialized with 1
+	assert.Equal(int(b.entryOffsets[0]), 1)
+
+	// entryEndOffset
+	b.entryEndOffset = offset
+
+	//TODO: baseKey
+	return nil
+}
+
+type blockIterator struct {
+	entryPos int
+	err      error
+	block    *block
+}
+
+func (b *block) NewIterator() util.Iterator {
+	return &blockIterator{
+		block:    b,
+		entryPos: 0,
+		err:      nil,
+	}
+}
+
+func (iter *blockIterator) Next() {
+	iter.entryPos++
+	if iter.entryPos >= len(iter.block.entryOffsets) {
+		iter.err = io.EOF
+		return
+	}
+}
+
+func (iter *blockIterator) Valid() bool {
+	return iter.err == nil
+}
+
+func (iter *blockIterator) Rewind() {
+	iter.SeekToFirst()
+}
+
+func (iter *blockIterator) SeekToFirst() {
+	iter.err = nil
+	iter.entryPos = 0
+}
+
+func (iter *blockIterator) SeekToLast() {
+	iter.err = nil
+	iter.entryPos = len(iter.block.entryOffsets) - 1
+}
+
+// Seek moves the iterator to the first entry with a key >= target
+func (iter *blockIterator) Seek(key []byte) {
+	for ; iter.Valid(); iter.Next() {
+		item := iter.Item()
+		if bytes.Compare(item.Entry().Key, key) >= 0 {
+			return
+		}
+	}
+}
+
+// Only need the entryPos to get the item
+func (iter *blockIterator) Item() util.Item {
+	if !iter.Valid() {
+		return nil
+	}
+	var endOffset uint32
+	if iter.entryPos+1 == len(iter.block.entryOffsets) {
+		endOffset = iter.block.entryEndOffset
+	} else {
+		endOffset = iter.block.entryOffsets[iter.entryPos+1]
+	}
+	offset := iter.block.entryOffsets[iter.entryPos]
+	//header
+	var h header
+	h.decode(iter.block.arena.Get(offset, 4))
+	// diffKey
+	offset += 4
+	diffKey := iter.block.arena.Get(offset, uint32(h.diff))
+	// value
+	offset += uint32(h.diff)
+	value := iter.block.arena.Get(offset, endOffset-offset)
+	var vs util.ValueStruct
+	vs.DecodeValue(value)
+	return &util.Entry{
+		Key:         util.RecoverKey(iter.block.baseKey, diffKey, h.overlap),
+		ValueStruct: vs,
+	}
+}
+
+func (iter *blockIterator) Close() error {
+	return nil
 }

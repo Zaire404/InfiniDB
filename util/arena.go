@@ -58,3 +58,10 @@ func (a *Arena) Checksum() uint32 {
 	checksum := Checksum(a.blocks[:a.allocOffset])
 	return checksum
 }
+
+func RecoverArena(data []byte, len uint32) *Arena {
+	a := NewArena(len)
+	copy(a.blocks, data)
+	a.allocOffset = len
+	return a
+}

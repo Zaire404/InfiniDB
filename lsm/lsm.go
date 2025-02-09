@@ -1,7 +1,6 @@
 package lsm
 
 import (
-	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/util"
 )
 
@@ -10,7 +9,6 @@ type LSM struct {
 	immutables   []*MemTable
 	levelManager levelManager
 	opt          *Options
-	maxMemFID    uint64
 }
 
 func NewLSM(opt *Options) *LSM {
@@ -28,31 +26,30 @@ func (lsm *LSM) Set(entry *util.Entry) error {
 	}
 	lsm.memTable.set(entry)
 
-	// TODO: flush immutables to sstable
 	for _, immutable := range lsm.immutables {
 		if err := lsm.levelManager.flush(immutable); err != nil {
 			return err
 		}
 	}
-	//释放immutable表
+
+	// free immutables
 	if len(lsm.immutables) != 0 {
 		lsm.immutables = make([]*MemTable, 0)
 	}
 	return nil
 }
 
-func (lsm *LSM) Get(key []byte) ([]byte, error) {
+
+func (lsm *LSM) Get(key []byte) (*util.Entry, error) {
 	entry, err := lsm.memTable.get(key)
 	if err == nil {
-		return entry.ValueStruct.Value, nil
+		return entry, nil
 	}
 	for _, im := range lsm.immutables {
 		entry, err = im.get(key)
 		if err == nil {
-			return entry.ValueStruct.Value, nil
+			return entry, nil
 		}
 	}
-	// TODO: search sstables
-
-	return nil, ErrKeyNotFound
+	return lsm.levelManager.Get(key)
 }

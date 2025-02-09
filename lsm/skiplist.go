@@ -206,6 +206,7 @@ func randomHeight() (height uint32) {
 }
 
 // Search searches the key in the skiplist.
+// Only key is found, the value is returned, error is nil.
 func (sl *SkipList) Search(key []byte) (vs util.ValueStruct, err error) {
 	prev := sl.headOffset
 	for i := int(sl.height) - 1; i >= 0; i-- {
@@ -229,7 +230,7 @@ type SkipListIterator struct {
 	nd *node
 }
 
-func (sl *SkipList) NewSkipListIterator() *SkipListIterator {
+func (sl *SkipList) NewIterator() util.Iterator {
 	return &SkipListIterator{
 		sl: sl,
 	}
@@ -239,7 +240,7 @@ func (s *SkipListIterator) Valid() bool {
 	return s.nd != nil
 }
 
-func (s *SkipListIterator) Item() *util.Entry {
+func (s *SkipListIterator) Item() util.Item {
 	return &util.Entry{
 		Key:         s.Key(),
 		ValueStruct: s.Value(),
@@ -316,4 +317,8 @@ func (s *SkipListIterator) SeekToLast() {
 		prev, _ = s.sl.findSpliceForLevel(i, nil, prev)
 	}
 	s.nd = getNode(s.sl.arena, prev)
+}
+
+func (s *SkipListIterator) Close() error {
+	return nil
 }

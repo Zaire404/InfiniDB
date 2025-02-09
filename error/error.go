@@ -9,4 +9,5 @@ var (
 	ErrKeyNotFound    = errors.New("Key not found")
 	ErrInvalidName    = errors.New("Invalid file name")
 	ErrReadOutOfBound = errors.New("Read out of bound")
+	ErrChecksum       = errors.New("Checksum error")
 )
