@@ -42,5 +42,8 @@ func DiffKey(baseKey []byte, newKey []byte) []byte {
 }
 
 func RecoverKey(baseKey []byte, diffKey []byte, overlap uint16) []byte {
-	return append(baseKey[:overlap], diffKey...)
+	newKey := make([]byte, int(overlap)+len(diffKey))
+	copy(newKey, baseKey[:overlap])
+	copy(newKey[overlap:], diffKey)
+	return newKey
 }
