@@ -14,7 +14,7 @@ func GetFIDByPath(tablepath string) (uint64, error) {
 		return 0, ErrInvalidName
 	}
 	name = strings.TrimSuffix(name, ".sst")
-	fid, err := strconv.Atoi(name)
+	fid, err := strconv.ParseUint(name, 10, 64)
 	if err != nil {
 		return 0, err
 	}
