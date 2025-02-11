@@ -14,3 +14,19 @@ message IndexTable{
     bytes bloomFilter = 2;
     uint32 keyCount = 3;
 }
+
+message ManifestChange{
+    enum Operation{
+        CREATE = 0;
+        DELETE = 1;
+    }
+    
+    uint64 ID = 1;
+    Operation Op = 2;
+    uint32 Level = 3;
+    bytes Checksum = 4;
+}
+
+message ManifestCommit{
+    repeated ManifestChange changes = 1;
+}

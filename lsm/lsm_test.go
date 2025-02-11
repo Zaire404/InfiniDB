@@ -2,7 +2,11 @@ package lsm
 
 import (
 	"fmt"
+	"os"
 	"testing"
+
+	"github.com/Zaire404/InfiniDB/config"
+	"github.com/Zaire404/InfiniDB/log"
 
 	"github.com/Zaire404/InfiniDB/util"
 	"github.com/stretchr/testify/require"
@@ -19,7 +23,22 @@ var (
 	}
 )
 
+func Init() {
+	config.Init()
+	log.Init()
+	clearDir()
+}
+
+func clearDir() {
+	_, err := os.Stat(opt.WorkDir)
+	if err == nil {
+		os.RemoveAll(opt.WorkDir)
+	}
+	os.Mkdir(opt.WorkDir, os.ModePerm)
+}
+
 func TestSet(t *testing.T) {
+	Init()
 	const n = 1000
 	lsm := NewLSM(opt)
 	lsm.memTable = newMemTable()
@@ -37,6 +56,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
+	Init()
 	const n = 1000
 	lsm := NewLSM(opt)
 	lsm.memTable = newMemTable()
