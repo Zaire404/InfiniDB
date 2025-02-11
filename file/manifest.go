@@ -317,7 +317,7 @@ func (m *Manifest) getCommit() *proto.ManifestCommit {
 }
 
 func (m *Manifest) getChanges() []*proto.ManifestChange {
-	changes := make([]*proto.ManifestChange, len(m.Tables))
+	changes := make([]*proto.ManifestChange, 0, len(m.Tables))
 	for id, tm := range m.Tables {
 		changes = append(changes, newManifestChange(id, int(tm.Level), tm.Checksum))
 	}
