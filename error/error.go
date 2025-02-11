@@ -10,4 +10,8 @@ var (
 	ErrInvalidName    = errors.New("Invalid file name")
 	ErrReadOutOfBound = errors.New("Read out of bound")
 	ErrChecksum       = errors.New("Checksum error")
+	ErrMagic          = errors.New("Magic error")
+	ErrTableExists    = errors.New("Table exists")
+	ErrTableNotExists = errors.New("Table not exists")
+	ErrInvalidOp      = errors.New("Invalid operation")
 )

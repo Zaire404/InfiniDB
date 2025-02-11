@@ -1,6 +1,8 @@
 package util
 
 import (
+	"bufio"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -46,4 +48,36 @@ func RecoverKey(baseKey []byte, diffKey []byte, overlap uint16) []byte {
 	copy(newKey, baseKey[:overlap])
 	copy(newKey[overlap:], diffKey)
 	return newKey
+}
+
+func CollectIDMap(dir string) (map[uint64]struct{}, error) {
+	filesInfo, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	idMap := make(map[uint64]struct{})
+	for _, info := range filesInfo {
+		if info.IsDir() {
+			continue
+		}
+		fid, err := GetFIDByPath(info.Name())
+		if err != nil {
+			continue
+		}
+		if fid != 0 {
+			idMap[fid] = struct{}{}
+		}
+	}
+	return idMap, nil
+}
+
+type BufReader struct {
+	Reader *bufio.Reader
+	Offset int64
+}
+
+func (r *BufReader) Read(p []byte) (n int, err error) {
+	n, err = r.Reader.Read(p)
+	r.Offset += int64(n)
+	return n, err
 }

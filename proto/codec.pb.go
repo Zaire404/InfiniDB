@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ManifestChange_Operation int32
+
+const (
+	ManifestChange_CREATE ManifestChange_Operation = 0
+	ManifestChange_DELETE ManifestChange_Operation = 1
+)
+
+// Enum value maps for ManifestChange_Operation.
+var (
+	ManifestChange_Operation_name = map[int32]string{
+		0: "CREATE",
+		1: "DELETE",
+	}
+	ManifestChange_Operation_value = map[string]int32{
+		"CREATE": 0,
+		"DELETE": 1,
+	}
+)
+
+func (x ManifestChange_Operation) Enum() *ManifestChange_Operation {
+	p := new(ManifestChange_Operation)
+	*p = x
+	return p
+}
+
+func (x ManifestChange_Operation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ManifestChange_Operation) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_codec_proto_enumTypes[0].Descriptor()
+}
+
+func (ManifestChange_Operation) Type() protoreflect.EnumType {
+	return &file_proto_codec_proto_enumTypes[0]
+}
+
+func (x ManifestChange_Operation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ManifestChange_Operation.Descriptor instead.
+func (ManifestChange_Operation) EnumDescriptor() ([]byte, []int) {
+	return file_proto_codec_proto_rawDescGZIP(), []int{2, 0}
+}
+
 type BlockOffset struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           []byte                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -141,6 +187,118 @@ func (x *IndexTable) GetKeyCount() uint32 {
 	return 0
 }
 
+type ManifestChange struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	ID            uint64                   `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Op            ManifestChange_Operation `protobuf:"varint,2,opt,name=Op,proto3,enum=proto.ManifestChange_Operation" json:"Op,omitempty"`
+	Level         uint32                   `protobuf:"varint,3,opt,name=Level,proto3" json:"Level,omitempty"`
+	Checksum      []byte                   `protobuf:"bytes,4,opt,name=Checksum,proto3" json:"Checksum,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestChange) Reset() {
+	*x = ManifestChange{}
+	mi := &file_proto_codec_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestChange) ProtoMessage() {}
+
+func (x *ManifestChange) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_codec_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestChange.ProtoReflect.Descriptor instead.
+func (*ManifestChange) Descriptor() ([]byte, []int) {
+	return file_proto_codec_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ManifestChange) GetID() uint64 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+func (x *ManifestChange) GetOp() ManifestChange_Operation {
+	if x != nil {
+		return x.Op
+	}
+	return ManifestChange_CREATE
+}
+
+func (x *ManifestChange) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *ManifestChange) GetChecksum() []byte {
+	if x != nil {
+		return x.Checksum
+	}
+	return nil
+}
+
+type ManifestCommit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Changes       []*ManifestChange      `protobuf:"bytes,1,rep,name=changes,proto3" json:"changes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestCommit) Reset() {
+	*x = ManifestCommit{}
+	mi := &file_proto_codec_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestCommit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestCommit) ProtoMessage() {}
+
+func (x *ManifestCommit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_codec_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestCommit.ProtoReflect.Descriptor instead.
+func (*ManifestCommit) Descriptor() ([]byte, []int) {
+	return file_proto_codec_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ManifestCommit) GetChanges() []*ManifestChange {
+	if x != nil {
+		return x.Changes
+	}
+	return nil
+}
+
 var File_proto_codec_proto protoreflect.FileDescriptor
 
 var file_proto_codec_proto_rawDesc = string([]byte{
@@ -157,9 +315,24 @@ var file_proto_codec_proto_rawDesc = string([]byte{
 	0x73, 0x12, 0x20, 0x0a, 0x0b, 0x62, 0x6c, 0x6f, 0x6f, 0x6d, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x6f, 0x6d, 0x46, 0x69, 0x6c,
 	0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x6b, 0x65, 0x79, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x6b, 0x65, 0x79, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x42,
-	0x0a, 0x5a, 0x08, 0x2e, 0x2f, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x6b, 0x65, 0x79, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x22,
+	0xa8, 0x01, 0x0a, 0x0e, 0x4d, 0x61, 0x6e, 0x69, 0x66, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x6e,
+	0x67, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x02,
+	0x49, 0x44, 0x12, 0x2f, 0x0a, 0x02, 0x4f, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1f,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4d, 0x61, 0x6e, 0x69, 0x66, 0x65, 0x73, 0x74, 0x43,
+	0x68, 0x61, 0x6e, 0x67, 0x65, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52,
+	0x02, 0x4f, 0x70, 0x12, 0x14, 0x0a, 0x05, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x05, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x1a, 0x0a, 0x08, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x73, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x08, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x73, 0x75, 0x6d, 0x22, 0x23, 0x0a, 0x09, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x0a, 0x0a, 0x06, 0x43, 0x52, 0x45, 0x41, 0x54, 0x45, 0x10, 0x00, 0x12, 0x0a,
+	0x0a, 0x06, 0x44, 0x45, 0x4c, 0x45, 0x54, 0x45, 0x10, 0x01, 0x22, 0x41, 0x0a, 0x0e, 0x4d, 0x61,
+	0x6e, 0x69, 0x66, 0x65, 0x73, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x12, 0x2f, 0x0a, 0x07,
+	0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x4d, 0x61, 0x6e, 0x69, 0x66, 0x65, 0x73, 0x74, 0x43, 0x68,
+	0x61, 0x6e, 0x67, 0x65, 0x52, 0x07, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x42, 0x0a, 0x5a,
+	0x08, 0x2e, 0x2f, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 })
 
 var (
@@ -174,18 +347,24 @@ func file_proto_codec_proto_rawDescGZIP() []byte {
 	return file_proto_codec_proto_rawDescData
 }
 
-var file_proto_codec_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_codec_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_proto_codec_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_codec_proto_goTypes = []any{
-	(*BlockOffset)(nil), // 0: proto.BlockOffset
-	(*IndexTable)(nil),  // 1: proto.IndexTable
+	(ManifestChange_Operation)(0), // 0: proto.ManifestChange.Operation
+	(*BlockOffset)(nil),           // 1: proto.BlockOffset
+	(*IndexTable)(nil),            // 2: proto.IndexTable
+	(*ManifestChange)(nil),        // 3: proto.ManifestChange
+	(*ManifestCommit)(nil),        // 4: proto.ManifestCommit
 }
 var file_proto_codec_proto_depIdxs = []int32{
-	0, // 0: proto.IndexTable.offsets:type_name -> proto.BlockOffset
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 0: proto.IndexTable.offsets:type_name -> proto.BlockOffset
+	0, // 1: proto.ManifestChange.Op:type_name -> proto.ManifestChange.Operation
+	3, // 2: proto.ManifestCommit.changes:type_name -> proto.ManifestChange
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_codec_proto_init() }
@@ -198,13 +377,14 @@ func file_proto_codec_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_codec_proto_rawDesc), len(file_proto_codec_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_proto_codec_proto_goTypes,
 		DependencyIndexes: file_proto_codec_proto_depIdxs,
+		EnumInfos:         file_proto_codec_proto_enumTypes,
 		MessageInfos:      file_proto_codec_proto_msgTypes,
 	}.Build()
 	File_proto_codec_proto = out.File
