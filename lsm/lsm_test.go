@@ -19,7 +19,7 @@ var (
 		MemTableSize:                 4096,
 		BlockSize:                    1024,
 		BloomFilterFalsePositiveRate: 0.01,
-		MaxLevelNum:                  5,
+		LevelCount:                   5,
 	}
 )
 
