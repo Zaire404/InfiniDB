@@ -8,6 +8,6 @@ type Options struct {
 	SSTableSize                  uint32
 	BlockSize                    uint32 // Max is 100MB
 	BloomFilterFalsePositiveRate float64
-	MaxLevelNum                  uint16
+	LevelCount                   uint16
 	Logger                       *log.Logger
 }

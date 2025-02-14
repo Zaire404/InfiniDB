@@ -49,8 +49,8 @@ func (lm *levelManager) loadManifest() error {
 }
 
 func (lm *levelManager) build() error {
-	lm.levels = make([]*levelController, lm.opt.MaxLevelNum)
-	for i := 0; i < int(lm.opt.MaxLevelNum); i++ {
+	lm.levels = make([]*levelController, lm.opt.LevelCount)
+	for i := 0; i < int(lm.opt.LevelCount); i++ {
 		lm.levels[i] = newLevelController(i)
 	}
 	if err := lm.manifestFile.SyncManifestWithDir(lm.opt.WorkDir); err != nil {
@@ -71,7 +71,7 @@ func (lm *levelManager) build() error {
 		lm.levels[tableInfo.Level].addTable(t)
 	}
 
-	for i := 0; i < int(lm.opt.MaxLevelNum); i++ {
+	for i := 0; i < int(lm.opt.LevelCount); i++ {
 		lm.levels[i].Sort()
 	}
 	return nil
@@ -117,7 +117,7 @@ func (lm *levelManager) flush(immutable *MemTable) error {
 func (lm *levelManager) Get(key []byte) (*util.Entry, error) {
 	var entry *util.Entry
 	var err error
-	for i := 0; i < int(lm.opt.MaxLevelNum); i++ {
+	for i := 0; i < int(lm.opt.LevelCount); i++ {
 		if entry, err = lm.levels[i].Get(key); err == nil {
 			return entry, nil
 		}
