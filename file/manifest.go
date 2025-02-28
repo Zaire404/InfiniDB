@@ -103,7 +103,8 @@ func (mf *ManifestFile) RewriteManifestFile(dir string) error {
 }
 
 func (mf *ManifestFile) AddTable(id uint64, level int) error {
-	return mf.addChanges([]*proto.ManifestChange{newManifestChange(id, level, nil)})
+	change := NewCreateChange(id, level)
+	return mf.addChanges([]*proto.ManifestChange{change})
 }
 
 func (mf *ManifestFile) addChanges(changes []*proto.ManifestChange) error {
@@ -125,9 +126,13 @@ func (mf *ManifestFile) addChanges(changes []*proto.ManifestChange) error {
 			return err
 		}
 	} else {
+		// i dont know why we need to seek there, but truely we need to seek there to deal with the bugs
+		if _, err := mf.file.Seek(0, io.SeekEnd); err != nil {
+			return err
+		}
 		buf := make([]byte, 8+len(data))
-		len := util.Uint32ToBytes(uint32(len(buf)))
-		checksum := util.Uint32ToBytes(util.Checksum(buf))
+		len := util.Uint32ToBytes(uint32(len(data)))
+		checksum := util.Uint32ToBytes(util.Checksum(data))
 		copy(buf, len)
 		copy(buf[4:], checksum)
 		copy(buf[8:], data)
@@ -143,6 +148,10 @@ func (mf *ManifestFile) addChanges(changes []*proto.ManifestChange) error {
 
 func (mf *ManifestFile) GetManifest() *Manifest {
 	return mf.manifest
+}
+
+func (mf *ManifestFile) ApplyCommit(commit *proto.ManifestCommit) error {
+	return mf.manifest.applyCommit(commit)
 }
 
 func newManifest() *Manifest {
@@ -218,7 +227,7 @@ func (m *Manifest) ReplayManifestFile(f *os.File) (truncOffset int64, err error)
 		if err != nil {
 			return 0, err
 		}
-		if util.VerifyCheckSum(data, checksum) {
+		if !util.VerifyCheckSum(data, checksum) {
 			return 0, ErrChecksum
 		}
 		var commit proto.ManifestCommit
@@ -246,19 +255,22 @@ func (m *Manifest) flush(filePath string) error {
 
 	// commit
 	commit := m.getCommit()
-	data, err := proto.Marshal(commit)
-	if err != nil {
-		f.Close()
-		return err
-	}
+	if len(commit.Changes) != 0 {
 
-	// len
-	buf = append(buf, util.Uint32ToBytes(uint32(len(data)))...)
-	// checksum
-	checksum := util.Checksum(data)
-	buf = append(buf, util.Uint32ToBytes(checksum)...)
-	// commit
-	buf = append(buf, data...)
+		data, err := proto.Marshal(commit)
+		if err != nil {
+			f.Close()
+			return err
+		}
+
+		// len
+		buf = append(buf, util.Uint32ToBytes(uint32(len(data)))...)
+		// checksum
+		checksum := util.Checksum(data)
+		buf = append(buf, util.Uint32ToBytes(checksum)...)
+		// commit
+		buf = append(buf, data...)
+	}
 
 	if _, err := f.Write(buf); err != nil {
 		f.Close()
@@ -286,6 +298,7 @@ func (m *Manifest) applyChange(change *proto.ManifestChange) error {
 	switch change.Op {
 	case proto.ManifestChange_CREATE:
 		if _, ok := m.Tables[change.ID]; ok {
+			log.Logger.Errorf("create table %d already exists", change.ID)
 			return ErrTableExists
 		}
 		m.Tables[change.ID] = &TableManifest{
@@ -299,6 +312,7 @@ func (m *Manifest) applyChange(change *proto.ManifestChange) error {
 		m.CreateCount++
 	case proto.ManifestChange_DELETE:
 		if _, ok := m.Tables[change.ID]; !ok {
+			log.Logger.Errorf("delete table %d not exists", change.ID)
 			return ErrTableNotExists
 		}
 		delete(m.Tables, change.ID)
@@ -329,5 +343,20 @@ func newManifestChange(id uint64, level int, checksum []byte) *proto.ManifestCha
 		ID:       id,
 		Level:    uint32(level),
 		Checksum: checksum,
+	}
+}
+
+func NewCreateChange(tableID uint64, level int) *proto.ManifestChange {
+	return &proto.ManifestChange{
+		ID:    tableID,
+		Op:    proto.ManifestChange_CREATE,
+		Level: uint32(level),
+	}
+}
+
+func NewDeleteChange(tableID uint64) *proto.ManifestChange {
+	return &proto.ManifestChange{
+		ID: tableID,
+		Op: proto.ManifestChange_DELETE,
 	}
 }
