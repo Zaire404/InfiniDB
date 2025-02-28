@@ -1,18 +1,19 @@
 package lsm
 
 import (
+	"github.com/Zaire404/InfiniDB/skl"
 	"github.com/Zaire404/InfiniDB/util"
 )
 
 type MemTable struct {
-	sl    *SkipList
+	sl    *skl.SkipList
 	ref   uint32
 	arena *util.Arena
 }
 
 func newMemTable() *MemTable {
 	return &MemTable{
-		sl:    NewSkipList(1 << 20),
+		sl:    skl.NewSkipList(1 << 20),
 		arena: util.NewArena(1 << 20),
 	}
 }

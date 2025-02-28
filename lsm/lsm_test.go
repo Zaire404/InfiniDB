@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Zaire404/InfiniDB/config"
 	"github.com/Zaire404/InfiniDB/log"
@@ -20,6 +21,11 @@ var (
 		BlockSize:                    1024,
 		BloomFilterFalsePositiveRate: 0.01,
 		LevelCount:                   5,
+		LevelSizeMultiplier:          10,
+		BaseLevelSize:                4096 << 4,
+		BaseTableSize:                4096,
+		CompactThreadCount:           1,
+		NumLevelZeroTables:           3,
 	}
 )
 
@@ -49,7 +55,7 @@ func TestSet(t *testing.T) {
 			t.Log(err)
 		}
 	}
-	t.Logf("table count is %d", lsm.levelManager.levels[0].size)
+	t.Logf("table count is %d", lsm.levelManager.levels[0].tableCount)
 	for _, table := range lsm.levelManager.levels[0].tables {
 		t.Logf("minKey: %s", table.sst.MinKey())
 	}
@@ -79,4 +85,52 @@ func TestGet(t *testing.T) {
 		_, err := lsm.Get([]byte(fmt.Sprintf("nokey%d", i)))
 		require.Error(t, err)
 	}
+}
+
+func Benchmark_Compact(b *testing.B) {
+	Init()
+	lsm := NewLSM(opt)
+	lsm.memTable = newMemTable()
+	b.N = 1000
+	// 启动压缩操作
+	go lsm.StartCompact()
+	go lsm.AutoDelete()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := []byte(fmt.Sprintf("key%d", i))
+		value := []byte("value")
+		err := lsm.Set(util.NewEntry(key, value))
+		if err != nil {
+			b.Error(err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	for i := 0; i < b.N; i++ {
+		key := []byte(fmt.Sprintf("key%d", i))
+		value := []byte("valuediff")
+		err := lsm.Set(util.NewEntry(key, value))
+		if err != nil {
+			b.Error(err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	for i := 0; i < int(opt.LevelCount); i++ {
+		fmt.Printf("level %d\n: ", i)
+		for _, table := range lsm.levelManager.levels[i].tables {
+			fmt.Printf("id: %d, minkey: %s, maxkey: %s\n", table.ID(), table.MinKey(), table.MaxKey())
+		}
+		fmt.Println()
+	}
+
+	for i := 0; i < b.N; i++ {
+		key := []byte(fmt.Sprintf("key%d", i))
+		_, err := lsm.Get(key)
+		if err != nil {
+			b.Errorf("%s not found", key)
+		}
+		// if string(entry.ValueStruct.Value) != "valuediff" {
+		// 	b.Errorf("expect value is valuediff, but got %s", entry.ValueStruct.Value)
+		// }
+	}
+	b.StopTimer()
 }

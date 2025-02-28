@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-
 	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/util"
 
@@ -76,4 +75,8 @@ func (m *MmapFile) Bytes(off, sz int) ([]byte, error) {
 		return nil, ErrReadOutOfBound
 	}
 	return m.Data[off : off+sz], nil
+}
+
+func (m *MmapFile) Delete() {
+	os.Rename(m.Fd.Name(), m.Fd.Name()+".del")
 }

@@ -14,4 +14,5 @@ var (
 	ErrTableExists    = errors.New("Table exists")
 	ErrTableNotExists = errors.New("Table not exists")
 	ErrInvalidOp      = errors.New("Invalid operation")
+	ErrFillTables     = errors.New("Fill tables error")
 )
