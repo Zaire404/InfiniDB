@@ -17,9 +17,10 @@
 
 详情请参阅 [proto/codec.proto](proto/codec.proto) 文件中的定义。
 ```go
+// 详见[file/manifest]中addChanges()函数
 [commit]
-	- [length]
-	- [checksum]
+	- [length]		// length of the changes data
+	- [checksum]	// checksum of the changes data
 	- [change 1]
 	- [change 2]
 	...

@@ -20,7 +20,7 @@ type tableBuilder struct {
 	blocks      []*block
 	indexTable  *proto.IndexTable
 	size        uint32
-	opt         *Options
+	opt         Options
 }
 
 type block struct {
@@ -41,12 +41,20 @@ func newBlock(blockSize uint32) *block {
 	}
 }
 
-func newTableBuilder(opt *Options) *tableBuilder {
+func newTableBuilder(opt Options) *tableBuilder {
 	return &tableBuilder{
 		opt:        opt,
 		curBlock:   newBlock(opt.BlockSize),
 		indexTable: &proto.IndexTable{},
 	}
+}
+
+func (tb *tableBuilder) Empty() bool {
+	return len(tb.keyHashList) == 0
+}
+
+func (tb *tableBuilder) Close() {
+
 }
 
 func (tb *tableBuilder) add(e *util.Entry) {
@@ -160,6 +168,10 @@ func (tb *tableBuilder) buildBlockOffsets() {
 	}
 	tb.indexTable.Offsets = blockOffsets
 
+}
+
+func (tb *tableBuilder) IsReachedCapacity() bool {
+	return tb.size >= tb.opt.SSTableSize
 }
 
 func (block *block) canAppendEntry(e *util.Entry, maxSize uint32) bool {

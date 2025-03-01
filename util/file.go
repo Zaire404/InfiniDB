@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	. "github.com/Zaire404/InfiniDB/error"
+	"github.com/pkg/errors"
 )
 
 func GetFIDByPath(tablepath string) (uint64, error) {
@@ -80,4 +81,16 @@ func (r *BufReader) Read(p []byte) (n int, err error) {
 	n, err = r.Reader.Read(p)
 	r.Offset += int64(n)
 	return n, err
+}
+
+func SyncDir(dir string) error {
+	file, err := os.Open(dir)
+	if err != nil {
+		return errors.Wrapf(err, "While opening directory: %s.", dir)
+	}
+	if err := file.Sync(); err != nil {
+		return errors.Wrapf(err, "While syncing directory: %s.", dir)
+	}
+	closeErr := file.Close()
+	return errors.Wrapf(closeErr, "While closing directory: %s.", dir)
 }
