@@ -68,18 +68,9 @@ func (t *Table) Search(key []byte) (*util.Entry, error) {
 	}
 	iter := t.NewIterator(&util.Options{})
 	iter.Seek(key)
-	if iter == nil {
-		panic("iter is nil")
-	}
 	if iter.Valid() {
 		entryFound := iter.Item().Entry()
-		if entryFound == nil {
-			panic("entryFound is nil")
-		}
 		keyFound := entryFound.Key
-		if keyFound == nil {
-			panic("keyFound is nil")
-		}
 		// fmt.Println("keyFound: ", string(keyFound))
 		if bytes.Equal(key, keyFound) {
 			return entryFound, nil
