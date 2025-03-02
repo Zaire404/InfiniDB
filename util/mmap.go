@@ -26,3 +26,8 @@ func Msync(data []byte) error {
 func Munmap(data []byte) error {
 	return unix.Munmap(data)
 }
+
+// Mremap unmmap and mmap
+func Mremap(data []byte, size int) ([]byte, error) {
+	return unix.Mremap(data, size, unix.MREMAP_MAYMOVE)
+}

@@ -77,8 +77,8 @@ func (lm *levelManager) build() error {
 			lm.maxFID = fid
 		}
 		fileName := util.GenSSTName(fid)
-
-		t, err := openTable(lm, fileName, nil)
+		filePath := lm.opt.WorkDir + "/" + fileName
+		t, err := openTable(lm, filePath, nil)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func (lm *levelManager) flush(immutable *MemTable) error {
 		builder.add(iter.Item().Entry())
 	}
 
-	nextFID := atomic.AddUint64(&lm.maxFID, 1)
+	nextFID := immutable.wal.FID()
 	sstName := util.GenSSTName(nextFID)
 	sstPath := lm.opt.WorkDir + "/" + sstName
 	table, err := openTable(lm, sstPath, builder)
@@ -145,6 +145,18 @@ func (lm *levelManager) Get(key []byte) (*util.Entry, error) {
 
 func (lm *levelManager) lastLevel() *levelHandler {
 	return lm.levels[int(lm.opt.LevelCount)-1]
+}
+
+func (lm *levelManager) close() error {
+	if err := lm.manifestFile.Close(); err != nil {
+		return err
+	}
+	for i := range lm.levels {
+		if err := lm.levels[i].close(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (lm *levelManager) runCompactor(id int, closer *util.Closer) {
@@ -961,4 +973,13 @@ func (s *levelHandler) overlappingTables(_ levelHandlerRLocked, kr keyRange) (in
 		return bytes.Compare(kr.right, s.tables[i].MaxKey()) < 0
 	})
 	return left, right
+}
+
+func (lh *levelHandler) close() error {
+	for _, t := range lh.tables {
+		if err := t.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

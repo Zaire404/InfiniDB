@@ -36,17 +36,25 @@ func (c *Closer) Ctx() context.Context {
 }
 
 // Done calls Done() on the WaitGroup.
-func (lc *Closer) Done() {
-	if lc == nil {
+func (c *Closer) Done() {
+	if c == nil {
 		return
 	}
-	lc.waiting.Done()
+	c.waiting.Done()
 }
 
 // HasBeenClosed gets signaled when Signal() is called
-func (lc *Closer) HasBeenClosed() <-chan struct{} {
-	if lc == nil {
+func (c *Closer) HasBeenClosed() <-chan struct{} {
+	if c == nil {
 		return dummyCloserChan
 	}
-	return lc.ctx.Done()
+	return c.ctx.Done()
+}
+
+// Close signals that the Closer is closed
+func (c *Closer) Close() {
+	if c == nil {
+		return
+	}
+	c.cancel()
 }

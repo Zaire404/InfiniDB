@@ -35,6 +35,8 @@ func (v *ValueStruct) EncodeValue(b []byte) uint32 {
 type Entry struct {
 	Key         []byte
 	ValueStruct ValueStruct
+	Offset      uint32
+	HeaderLen   int
 }
 
 func NewEntry(key []byte, value []byte) *Entry {
@@ -48,4 +50,12 @@ func NewEntry(key []byte, value []byte) *Entry {
 
 func (e *Entry) Entry() *Entry {
 	return e
+}
+
+func (e *Entry) LogHeaderLen() int {
+	return e.HeaderLen
+}
+
+func (e *Entry) IsZero() bool {
+	return len(e.Key) == 0
 }

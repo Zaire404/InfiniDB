@@ -106,7 +106,7 @@ func (t *Table) DecrRef() error {
 }
 
 func (t *Table) Close() error {
-	return nil
+	return t.sst.Close()
 }
 
 func DecrRefs(tables []*Table) error {
