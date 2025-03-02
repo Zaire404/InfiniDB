@@ -47,7 +47,6 @@ func TestSet(t *testing.T) {
 	Init()
 	const n = 1000
 	lsm := NewLSM(opt)
-	lsm.memTable = newMemTable()
 	lsm.Set(util.NewEntry([]byte("key000"), []byte("value")))
 	for i := 1; i < n; i++ {
 		err := lsm.Set(util.NewEntry([]byte(fmt.Sprintf("key%d", i)), []byte("value")))
@@ -65,7 +64,6 @@ func TestGet(t *testing.T) {
 	Init()
 	const n = 1000
 	lsm := NewLSM(opt)
-	lsm.memTable = newMemTable()
 	for i := 0; i < n; i++ {
 		err := lsm.Set(util.NewEntry([]byte(fmt.Sprintf("key%d", i)), []byte("value")))
 		if err != nil {
@@ -90,7 +88,6 @@ func TestGet(t *testing.T) {
 func Benchmark_Compact(b *testing.B) {
 	Init()
 	lsm := NewLSM(opt)
-	lsm.memTable = newMemTable()
 	b.N = 1000
 	// 启动压缩操作
 	go lsm.StartCompact()
@@ -133,4 +130,27 @@ func Benchmark_Compact(b *testing.B) {
 		// }
 	}
 	b.StopTimer()
+}
+
+func TestRecovery(t *testing.T) {
+	Init()
+	lsm := NewLSM(opt)
+	const n = 1000
+	for i := 0; i < n; i++ {
+		key := []byte(fmt.Sprintf("key%d", i))
+		value := []byte("value")
+		err := lsm.Set(util.NewEntry(key, value))
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	lsm.Close()
+	lsm = NewLSM(opt)
+	for i := 0; i < n; i++ {
+		key := []byte(fmt.Sprintf("key%d", i))
+		_, err := lsm.Get(key)
+		if err != nil {
+			t.Errorf("%s not found", key)
+		}
+	}
 }

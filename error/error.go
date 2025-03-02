@@ -15,4 +15,6 @@ var (
 	ErrTableNotExists = errors.New("Table not exists")
 	ErrInvalidOp      = errors.New("Invalid operation")
 	ErrFillTables     = errors.New("Fill tables error")
+	ErrTruncate       = errors.New("Do truncate error")
+	ErrStop           = errors.New("Stop iteration")
 )

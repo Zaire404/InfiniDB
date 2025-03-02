@@ -154,6 +154,15 @@ func (mf *ManifestFile) ApplyCommit(commit *proto.ManifestCommit) error {
 	return mf.manifest.applyCommit(commit)
 }
 
+func (mf *ManifestFile) Close() error {
+	if mf.file != nil {
+		if err := mf.file.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func newManifest() *Manifest {
 	return &Manifest{
 		Levels: make([]*LevelManifest, 0),

@@ -141,3 +141,7 @@ func (sst *SSTable) Size() int64 {
 func (sst *SSTable) Delete() {
 	sst.file.Delete()
 }
+
+func (sst *SSTable) Close() error {
+	return sst.file.Close()
+}
