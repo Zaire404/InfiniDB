@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -128,10 +129,15 @@ type mmapReader struct {
 }
 
 func (m *MmapFile) NewReader(offset int) io.Reader {
-	return &mmapReader{
-		Data:   m.Data,
-		offset: offset,
+	// return &mmapReader{
+	// 	Data:   m.Data,
+	// 	offset: offset,
+	// }
+	r := bytes.NewReader(m.Data)
+	if _, err := r.Seek(int64(offset), io.SeekStart); err != nil {
+		panic(err)
 	}
+	return r
 }
 
 func (mr *mmapReader) Read(buf []byte) (int, error) {
