@@ -2,9 +2,6 @@
 
 ```go
 <beginning_of_file>
-[meta block]
-    - [numEntries]
-    - 
 [entryCodec 1]
 [entryCodec 2]
 ...
