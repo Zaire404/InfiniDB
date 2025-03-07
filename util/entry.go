@@ -5,16 +5,19 @@ import "encoding/binary"
 type ValueStruct struct {
 	Value    []byte
 	ExpireAt uint64
+	Meta     byte
 }
 
 func (v *ValueStruct) EncodedSize() uint32 {
-	return uint32(len(v.Value)) + sizeVarint(v.ExpireAt)
+	// 1 byte for meta
+	return uint32(len(v.Value)) + sizeVarint(v.ExpireAt) + 1
 }
 
 func (v *ValueStruct) DecodeValue(b []byte) {
 	n, sz := binary.Uvarint(b)
 	v.ExpireAt = n
-	v.Value = b[sz:]
+	v.Value = b[sz : len(b)-1]
+	v.Meta = b[len(b)-1]
 }
 
 func sizeVarint(v uint64) uint32 {
@@ -27,9 +30,11 @@ func sizeVarint(v uint64) uint32 {
 }
 
 // EncodeValue encodes the value struct into the byte slice.
-func (v *ValueStruct) EncodeValue(b []byte) uint32 {
+func (v *ValueStruct) EncodeValue(b []byte) (encSize uint32) {
 	sz := binary.PutUvarint(b, v.ExpireAt)
-	return uint32(sz + copy(b[sz:], v.Value))
+	encSize = uint32(sz + copy(b[sz:], v.Value))
+	encSize += uint32(copy(b[encSize:], []byte{v.Meta}))
+	return encSize
 }
 
 type Entry struct {

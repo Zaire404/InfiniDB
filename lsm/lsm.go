@@ -45,7 +45,7 @@ func (lsm *LSM) recovery() []*MemTable {
 	var maxFID uint64
 	var fids []uint64
 
-	fmt.Print("recovery:")
+	fmt.Print("WAL recovery:")
 	// Iterate over the files and collect WAL file IDs
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), WalFileExt) {
@@ -61,6 +61,7 @@ func (lsm *LSM) recovery() []*MemTable {
 			fids = append(fids, fid)
 		}
 	}
+	fmt.Println()
 
 	// Update the maximum file ID in the level manager
 	lsm.levelManager.maxFID = maxFID
