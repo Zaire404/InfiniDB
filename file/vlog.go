@@ -80,23 +80,29 @@ func (f *VLogFile) Truncate(size int64) error {
 	return f.file.Truncate(size)
 }
 
-func (f *VLogFile) ReadValuePtr(vp *util.ValuePtr) (buf []byte, err error) {
+func (f *VLogFile) withRLock(fn func() ([]byte, error)) ([]byte, error) {
 	f.Lock.RLock()
 	defer f.Lock.RUnlock()
-	offset := vp.Offset
-	dataSize := int64(len(f.file.Data))
-	entryCodecLen := vp.Len
-	vlogFileSize := atomic.LoadUint32(&f.size)
-	if int64(offset) >= dataSize || int64(offset+entryCodecLen) > dataSize ||
-		// Ensure that the read is within the file's actual size. It might be possible that
-		// the offset+valsz length is beyond the file's actual size. This could happen when
-		// dropAll and iterations are running simultaneously.
-		int64(offset+entryCodecLen) > int64(vlogFileSize) {
-		err = io.EOF
-	} else {
-		buf, err = f.file.Bytes(int(offset), int(entryCodecLen))
-	}
-	return buf, err
+	return fn()
+}
+
+func (f *VLogFile) ReadValuePtr(vp *util.ValuePtr) (buf []byte, err error) {
+	return f.withRLock(func() ([]byte, error) {
+		offset := vp.Offset
+		dataSize := int64(len(f.file.Data))
+		entryCodecLen := vp.Len
+		vlogFileSize := atomic.LoadUint32(&f.size)
+		if int64(offset) >= dataSize || int64(offset+entryCodecLen) > dataSize ||
+			// Ensure that the read is within the file's actual size. It might be possible that
+			// the offset+valsz length is beyond the file's actual size. This could happen when
+			// dropAll and iterations are running simultaneously.
+			int64(offset+entryCodecLen) > int64(vlogFileSize) {
+			err = io.EOF
+		} else {
+			buf, err = f.file.Bytes(int(offset), int(entryCodecLen))
+		}
+		return buf, err
+	})
 }
 
 func (f *VLogFile) DoneWriting(offset uint32) error {

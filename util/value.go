@@ -1,6 +1,5 @@
 package util
 
-
 import (
 	"encoding/binary"
 	"errors"
@@ -30,7 +29,7 @@ func (vp ValuePtr) Encode() []byte {
 }
 
 func (vp *ValuePtr) Decode(in []byte) {
-	if len(in) < VptrSize {
+	if len(in) < int(VptrSize) {
 		panic("input slice too short for ValuePtr decoding")
 	}
 	copy(((*[VptrSize]byte)(unsafe.Pointer(vp))[:]), in[:VptrSize])
