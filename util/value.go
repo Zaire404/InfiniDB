@@ -1,5 +1,6 @@
 package util
 
+
 import (
 	"encoding/binary"
 	"errors"
