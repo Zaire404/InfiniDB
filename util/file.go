@@ -72,6 +72,10 @@ func CollectIDMap(dir string) (map[uint64]struct{}, error) {
 	return idMap, nil
 }
 
+func VLogFilePath(dir string, fid uint32) string {
+	return path.Join(dir, strconv.Itoa(int(fid))+".vlog")
+}
+
 type BufReader struct {
 	Reader *bufio.Reader
 	Offset int64

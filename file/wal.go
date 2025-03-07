@@ -153,7 +153,8 @@ func (r *SafeRead) MakeEntry(reader io.Reader) (*util.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	if header.KeyLen > uint32(1<<16) { // Key length must be below uint16.
+	// Key length must not exceed the maximum value of a uint16 (65535)
+	if header.KeyLen > uint32(1<<16) {
 		return nil, ErrTruncate
 	}
 	kl := int(header.KeyLen)
@@ -180,6 +181,7 @@ func (r *SafeRead) MakeEntry(reader io.Reader) (*util.Entry, error) {
 		return nil, err
 	}
 	e.Key = buf[:header.KeyLen]
+	e.ValueStruct.Meta = header.Meta
 	e.ValueStruct.Value = buf[header.KeyLen:]
 	var crcBuf [crc32.Size]byte
 	if _, err := io.ReadFull(reader, crcBuf[:]); err != nil {

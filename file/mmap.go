@@ -85,10 +85,10 @@ func (m *MmapFile) Delete() {
 
 func (m *MmapFile) Truncate(size int64) (err error) {
 	if err = m.Sync(); err != nil {
-		return fmt.Errorf("while sync file: %s, error: %v\n", m.Fd.Name(), err)
+		return errors.Errorf("while sync file: %s, error: %v\n", m.Fd.Name(), err)
 	}
 	if err = m.Fd.Truncate(size); err != nil {
-		return fmt.Errorf("while truncate file: %s, error: %v\n", m.Fd.Name(), err)
+		return errors.Errorf("while truncate file: %s, error: %v\n", m.Fd.Name(), err)
 	}
 
 	m.Data, err = util.Mremap(m.Data, int(size))
