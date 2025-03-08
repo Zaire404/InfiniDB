@@ -121,13 +121,14 @@ func Benchmark_Compact(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		key := []byte(fmt.Sprintf("key%d", i))
-		_, err := lsm.Get(key)
+		entry, err := lsm.Get(key)
 		if err != nil {
+			fmt.Print(lsm.levelManager.String())
 			b.Errorf("%s not found", key)
 		}
-		// if string(entry.ValueStruct.Value) != "valuediff" {
-		// 	b.Errorf("expect value is valuediff, but got %s", entry.ValueStruct.Value)
-		// }
+		if string(entry.ValueStruct.Value) != "valuediff" {
+			b.Errorf("expect value is valuediff, but got %s", entry.ValueStruct.Value)
+		}
 	}
 	b.StopTimer()
 }

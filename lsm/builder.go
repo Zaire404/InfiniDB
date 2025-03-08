@@ -314,7 +314,7 @@ func (iter *blockIterator) SeekToLast() {
 
 // Seek moves the iterator to the first entry with a key >= target
 func (iter *blockIterator) Seek(key []byte) {
-	for ; iter.Valid(); iter.Next() {
+	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
 		item := iter.Item()
 		if bytes.Compare(item.Entry().Key, key) >= 0 {
 			return

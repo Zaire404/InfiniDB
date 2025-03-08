@@ -60,6 +60,16 @@ func openTable(lm *levelManager, tablePath string, builder *tableBuilder) (*Tabl
 	return t, nil
 }
 
+func (t *Table) Print() {
+	fmt.Printf("table: %d, minKey: %s, maxKey: %s\n", t.fid, string(t.MinKey()), string(t.MaxKey()))
+	iter := t.NewIterator(&util.Options{IsAsc: true})
+	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
+		entry := iter.Item().Entry()
+		fmt.Printf("%s, ", string(entry.Key))
+	}
+	fmt.Println()
+}
+
 func (t *Table) Search(key []byte) (*util.Entry, error) {
 	bf := util.BloomFilter(t.sst.IndexTable().GetBloomFilter())
 	if t.sst.HasBloomFilter() && !bf.MayContainKey(key) {
@@ -223,10 +233,15 @@ func (iter *tableIterator) Seek(key []byte) {
 	})
 
 	index--
-	if index < 0 || index >= len(blockOffsets) {
+	if index < 0 {
+		index = 0
+	}
+
+	if index >= len(blockOffsets) {
 		iter.err = io.EOF
 		return
 	}
+
 	iter.SeekToNthBlock(index)
 	iter.blockIter.Seek(key)
 }
@@ -545,7 +560,7 @@ func (ci *ConcatIterator) Seek(key []byte) {
 		})
 	} else {
 		n := len(ci.tables)
-		idx = n - sort.Search(n, func(i int) bool {
+		idx = n - 1 - sort.Search(n, func(i int) bool {
 			return bytes.Compare(ci.tables[n-i-1].sst.MinKey(), key) <= 0
 		})
 	}
@@ -566,7 +581,7 @@ func (ci *ConcatIterator) Next() {
 		return
 	}
 	for { // In case there are empty tables.
-		if ci.options.IsAsc == true {
+		if ci.options.IsAsc {
 			ci.setIdx(ci.idx + 1)
 		} else {
 			ci.setIdx(ci.idx - 1)

@@ -6,7 +6,7 @@ type Iterator interface {
 	Rewind()
 	SeekToFirst()
 	SeekToLast()
-	Seek(key []byte)
+	Seek(key []byte) // Seek moves the iterator to the first entry with a key >= target
 	Item() Item
 	Close() error
 }
