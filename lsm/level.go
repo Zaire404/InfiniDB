@@ -54,6 +54,22 @@ func newLevelController(levelNumber int) *levelHandler {
 	}
 }
 
+func (lm *levelManager) String() string {
+	var res strings.Builder
+	for i := 0; i < int(lm.opt.LevelCount); i++ {
+		res.WriteString(lm.levels[i].String())
+	}
+	return res.String()
+}
+
+func (lh *levelHandler) String() string {
+	var res strings.Builder
+	res.WriteString(fmt.Sprintf(" Level%d: ", lh.level))
+	for _, t := range lh.tables {
+		res.WriteString(fmt.Sprintf("%d, ", t.fid))
+	}
+	return res.String()
+}
 func (lm *levelManager) loadManifest() error {
 	var err error
 	lm.manifestFile, err = file.OpenManifestFile(&file.Options{
@@ -315,6 +331,7 @@ func (lm *levelManager) pickCompactPriority() (prios []compactionPriority) {
 		sz := l.getTotalSize() - delSize
 		addPriority(i, float64(sz)/float64(targets.levelSize[i]))
 	}
+	// TODO: optimize
 	return prios
 }
 
@@ -495,17 +512,19 @@ func (lm *levelManager) compactBuildTables(level int, cd compactDef) ([]*Table, 
 			for i := topLen - 1; i >= 0; i-- {
 				// TODO: special for L0
 				iters = append(iters, topTables[i].NewIterator(&iterOption))
-				// log.Logger.Debugf("topTables[%d]: %d", i, topTables[i].fid)
-				// tmpIter := topTables[i].NewIterator(nil)
-				// for tmpIter.Rewind(); tmpIter.Valid(); tmpIter.Next() {
-				// 	fmt.Printf("%s ", tmpIter.Item().Entry().Key)
-				// }
-				// fmt.Println()
+				topTables[i].Print()
 			}
 		} else {
 			assert.True(len(topTables) == 1)
 			iters = []util.Iterator{topTables[0].NewIterator(nil)}
+			topTables[0].Print()
 		}
+		fmt.Println("concat botTables:")
+		conIter := NewConcatIterator(botTables, &iterOption)
+		for conIter.Rewind(); conIter.Valid(); conIter.Next() {
+			fmt.Printf("%s,", conIter.Item().Entry().Key)
+		}
+		fmt.Println()
 		return append(iters, NewConcatIterator(botTables, &iterOption))
 	}
 
@@ -521,15 +540,8 @@ func (lm *levelManager) compactBuildTables(level int, cd compactDef) ([]*Table, 
 		go func(kr keyRange) {
 			defer throttle.Done(nil)
 			iters := newIters()
-			log.Logger.Debugf("iters len %d", len(iters))
+			// it := util.NewLoserTree(iters)
 			it := NewMergeIterator(iters, false)
-			for it.Seek(kr.left); it.Valid(); it.Next() {
-				if len(kr.right) > 0 && bytes.Compare(it.Item().Entry().Key, kr.right) >= 0 {
-					break
-				}
-				fmt.Printf("%s,", it.Item().Entry().Key)
-			}
-			fmt.Println()
 			defer it.Close()
 			lm.subcompact(it, kr, cd, throttle, res)
 		}(kr)
@@ -587,8 +599,6 @@ func (lm *levelManager) subcompact(iter util.Iterator, kr keyRange, cd compactDe
 		}
 	}
 
-	// iter.Rewind()
-	// i dont know why below code is wrong
 	if len(kr.left) == 0 {
 		iter.Rewind()
 	} else {
