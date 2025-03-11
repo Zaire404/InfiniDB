@@ -6,3 +6,6 @@ go.work
 
 # test
 work_test
+
+# pprof
+*.profile

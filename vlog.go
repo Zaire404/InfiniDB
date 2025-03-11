@@ -3,7 +3,6 @@ package infinidb
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"hash/crc32"
 	"io"
 	"math"
@@ -115,7 +114,7 @@ func (vlog *valueLog) createVLogFile(fid uint32) (*file.VLogFile, error) {
 	opt := &file.Options{
 		Dir:     vlog.opt.WorkDir,
 		FID:     uint64(fid),
-		MaxSize: vlog.opt.ValueLogFileSize,
+		MaxSize: 2 * vlog.opt.ValueLogFileSize,
 	}
 
 	vlogFile, err := file.NewVLogFile(opt)
@@ -141,9 +140,6 @@ func (vlog *valueLog) createVLogFile(fid uint32) (*file.VLogFile, error) {
 func (vlog *valueLog) load(replayFn util.LogEntry) error {
 	if err := vlog.loadFilesMap(); err != nil {
 		return errors.Wrap(err, "failed to init files map")
-	}
-	for _, vlogFile := range vlog.filesMap {
-		fmt.Printf("load vlog file: %d\n", vlogFile.FID)
 	}
 	if len(vlog.filesMap) == 0 {
 		_, err := vlog.createVLogFile(0)
