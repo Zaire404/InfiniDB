@@ -101,6 +101,7 @@ func (lm *levelManager) build() error {
 		lm.levels[tableInfo.Level].addTable(t)
 	}
 
+	// maybe unnecessary
 	for i := 0; i < int(lm.opt.LevelCount); i++ {
 		lm.levels[i].Sort()
 	}
@@ -293,16 +294,6 @@ func (lm *levelManager) doCompact(id int, p compactionPriority) error {
 		log.Logger.Warnf("[Compactor: %d] Compact FAILED with error: %+v: %+v", id, err, cd)
 		return err
 	}
-
-	// debug for key not found
-	cd.thisLevel.Lock()
-	cd.thisLevel.Sort()
-	cd.thisLevel.Unlock()
-
-	cd.nextLevel.Lock()
-	cd.nextLevel.Sort()
-	cd.nextLevel.Unlock()
-
 	return nil
 }
 
@@ -417,12 +408,12 @@ func (lm *levelManager) runCompactDef(id, l int, cd compactDef) (err error) {
 	}
 
 	// DEBUG
-	log.Logger.Debugf("cd.thisRange: left: %s, right: %s", cd.thisRange.left, cd.thisRange.right)
-	log.Logger.Debugf("cd.nextRange: left: %s, right: %s", cd.nextRange.left, cd.nextRange.right)
-	log.Logger.Debugf("splits: %d", len(cd.splits))
-	for i, kr := range cd.splits {
-		log.Logger.Debugf("split%d: left: %s, right: %s", i, kr.left, kr.right)
-	}
+	// log.Logger.Debugf("cd.thisRange: left: %s, right: %s", cd.thisRange.left, cd.thisRange.right)
+	// log.Logger.Debugf("cd.nextRange: left: %s, right: %s", cd.nextRange.left, cd.nextRange.right)
+	// log.Logger.Debugf("splits: %d", len(cd.splits))
+	// for i, kr := range cd.splits {
+	// 	log.Logger.Debugf("split%d: left: %s, right: %s", i, kr.left, kr.right)
+	// }
 
 	// Table should never be moved directly between levels, always be rewritten to allow discarding
 	// invalid versions.
@@ -481,24 +472,23 @@ func (lm *levelManager) runCompactDef(id, l int, cd compactDef) (err error) {
 func (lm *levelManager) compactBuildTables(level int, cd compactDef) ([]*Table, func() error, error) {
 	topTables := cd.top
 	botTables := cd.bot
-	log.Logger.Debugf("topTables: %d, botTables: %d", len(topTables), len(botTables))
-	log.Logger.Debugf("toptables:")
-	for _, t := range topTables {
-		log.Logger.Debugf("topTables: %d, MinKey: %s, MaxKey: %s", t.fid, t.MinKey(), t.MaxKey())
-	}
-	log.Logger.Debugf("botTables:")
-	for _, t := range botTables {
-		log.Logger.Debugf("botTables: %d, MinKey: %s, MaxKey: %s", t.fid, t.MinKey(), t.MaxKey())
-	}
-	for _, t := range topTables {
-		fmt.Printf("%d,", t.fid)
-	}
-	fmt.Println()
-	for _, t := range botTables {
-		fmt.Printf("%d,", t.fid)
-	}
-	fmt.Println()
-	// numTables := int64(len(topTables) + len(botTables))
+	// log.Logger.Debugf("topTables: %d, botTables: %d", len(topTables), len(botTables))
+	// log.Logger.Debugf("toptables:")
+	// for _, t := range topTables {
+	// 	log.Logger.Debugf("topTables: %d, MinKey: %s, MaxKey: %s", t.fid, t.MinKey(), t.MaxKey())
+	// }
+	// log.Logger.Debugf("botTables:")
+	// for _, t := range botTables {
+	// 	log.Logger.Debugf("botTables: %d, MinKey: %s, MaxKey: %s", t.fid, t.MinKey(), t.MaxKey())
+	// }
+	// for _, t := range topTables {
+	// 	fmt.Printf("%d,", t.fid)
+	// }
+	// fmt.Println()
+	// for _, t := range botTables {
+	// 	fmt.Printf("%d,", t.fid)
+	// }
+	// fmt.Println()
 
 	iterOption := util.Options{
 		IsAsc: true,
@@ -569,6 +559,7 @@ func (lm *levelManager) compactBuildTables(level int, cd compactDef) ([]*Table, 
 		DecrRefs(newTables)
 		return nil, nil, err
 	}
+	// maybe unnecessary
 	sort.Slice(newTables, func(i, j int) bool {
 		return bytes.Compare(newTables[i].MaxKey(), newTables[j].MaxKey()) < 0
 	})
@@ -584,17 +575,15 @@ func (lm *levelManager) subcompact(iter util.Iterator, kr keyRange, cd compactDe
 				continue
 			}
 			if len(kr.right) > 0 && bytes.Compare(key, kr.right) >= 0 {
-				fmt.Println()
 				log.Logger.Debugf("break in subcompact in %s", key)
 				break
 			}
 			if builder.IsReachedCapacity() {
-				fmt.Println()
 				log.Logger.Debugf("break in subcompact in %s", key)
 				break
 			}
 			lastKey = util.SafeCopy(lastKey, key)
-			fmt.Printf("%s,", key)
+			// fmt.Printf("%s,", key)
 			builder.add(iter.Item().Entry())
 		}
 	}
@@ -607,7 +596,6 @@ func (lm *levelManager) subcompact(iter util.Iterator, kr keyRange, cd compactDe
 	for iter.Valid() {
 		key := iter.Item().Entry().Key
 		if len(kr.right) > 0 && bytes.Compare(key, kr.right) >= 0 {
-			fmt.Println()
 			log.Logger.Debugf("break in subcompact")
 			break
 		}
@@ -615,7 +603,6 @@ func (lm *levelManager) subcompact(iter util.Iterator, kr keyRange, cd compactDe
 		builder := newTableBuilder(*lm.opt)
 		builder.opt.SSTableSize = uint32(cd.targets.fileSize[cd.nextLevel.level])
 		fillTableBuilder(builder)
-		fmt.Println()
 		if builder.Empty() {
 			// TODO: to clear the resources
 			builder.Close()
@@ -942,6 +929,7 @@ func (lh *levelHandler) replaceTables(delTables []*Table, addTables []*Table) er
 		atomic.AddInt64(&lh.tableCount, 1)
 	}
 	lh.tables = newTables
+	// maybe unnecessary
 	lh.Sort()
 	return DecrRefs(delTables)
 }

@@ -1,7 +1,6 @@
 package lsm
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -45,7 +44,6 @@ func (lsm *LSM) recovery() []*MemTable {
 	var maxFID uint64
 	var fids []uint64
 
-	fmt.Print("WAL recovery:")
 	// Iterate over the files and collect WAL file IDs
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), WalFileExt) {
@@ -57,11 +55,9 @@ func (lsm *LSM) recovery() []*MemTable {
 			if fid > maxFID {
 				maxFID = fid
 			}
-			fmt.Printf("%d, ", fid)
 			fids = append(fids, fid)
 		}
 	}
-	fmt.Println()
 
 	// Update the maximum file ID in the level manager
 	lsm.levelManager.maxFID = maxFID
@@ -149,7 +145,7 @@ func (lsm *LSM) AutoDelete() {
 		select {
 		case <-lsm.closer.HasBeenClosed():
 			return
-		case <-time.After(10 * time.Second):
+		case <-time.After(30 * time.Second):
 			lsm.closer.AddRunning(1)
 			defer lsm.closer.Done()
 			files, err := os.ReadDir(lsm.opt.WorkDir)

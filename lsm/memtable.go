@@ -52,7 +52,7 @@ func (lsm *LSM) newMemTable() *MemTable {
 	}
 	return &MemTable{
 		wal: file.OpenWalFile(fileOpt),
-		sl:  skl.NewSkipList(1 << 20),
+		sl:  skl.NewSkipList(100000000),
 		lsm: lsm,
 	}
 }

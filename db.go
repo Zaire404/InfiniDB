@@ -25,14 +25,14 @@ func Open(opt *Options) *DB {
 		WorkDir:                      opt.WorkDir,
 		MemTableSize:                 opt.MemTableSize,
 		SSTableSize:                  opt.SSTableSize,
-		BlockSize:                    8 * 1024,
-		BloomFilterFalsePositiveRate: 0.01,
-		BaseLevelSize:                10 << 20,
-		LevelSizeMultiplier:          10,
-		BaseTableSize:                5 << 20,
-		NumLevelZeroTables:           10,
-		LevelCount:                   5,
-		CompactThreadCount:           1,
+		BlockSize:                    opt.BlockSize,
+		BloomFilterFalsePositiveRate: opt.BloomFilterFalsePositiveRate,
+		BaseLevelSize:                opt.BaseLevelSize,
+		LevelSizeMultiplier:          opt.LevelSizeMultiplier,
+		BaseTableSize:                opt.BaseTableSize,
+		NumLevelZeroTables:           opt.NumLevelZeroTables,
+		LevelCount:                   uint16(opt.NumLevelZeroTables),
+		CompactThreadCount:           uint16(opt.CompactThreadCount),
 	})
 	db.initVLog()
 	// go db.lsm.StartCompact()
