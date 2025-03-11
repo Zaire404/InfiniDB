@@ -502,11 +502,19 @@ func (lm *levelManager) compactBuildTables(level int, cd compactDef) ([]*Table, 
 			for i := topLen - 1; i >= 0; i-- {
 				// TODO: special for L0
 				iters = append(iters, topTables[i].NewIterator(&iterOption))
+				topTables[i].Print()
 			}
 		} else {
 			assert.True(len(topTables) == 1)
 			iters = []util.Iterator{topTables[0].NewIterator(nil)}
+			topTables[0].Print()
 		}
+		fmt.Println("concat botTables:")
+		conIter := NewConcatIterator(botTables, &iterOption)
+		for conIter.Rewind(); conIter.Valid(); conIter.Next() {
+			fmt.Printf("%s,", conIter.Item().Entry().Key)
+		}
+		fmt.Println()
 		return append(iters, NewConcatIterator(botTables, &iterOption))
 	}
 
