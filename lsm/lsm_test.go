@@ -60,22 +60,6 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func BenchmarkSet(b *testing.B) {
-	Init()
-	lsm := NewLSM(opt)
-	b.N = 100000
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := []byte(fmt.Sprintf("key%d", i))
-		value := []byte("value")
-		err := lsm.Set(util.NewEntry(key, value))
-		if err != nil {
-			b.Error(err)
-		}
-	}
-	b.StopTimer()
-}
-
 func TestGet(t *testing.T) {
 	Init()
 	const n = 1000
