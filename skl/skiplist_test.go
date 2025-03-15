@@ -101,8 +101,7 @@ func Benchmark_SkipListBasicCRUD(b *testing.B) {
 	// b.SetParallelism(1)
 	list := NewSkipList(100000000)
 	key, val := "", ""
-	maxTime := 1000
-	for i := 0; i < maxTime; i++ {
+	for i := 0; i < b.N; i++ {
 		//number := rand.Intn(10000)
 		key, val = util.GetRandomString(10), fmt.Sprintf("Val%d", i)
 		entry := util.NewEntry([]byte(key), []byte(val))
@@ -141,13 +140,12 @@ func TestConcurrentBasic(t *testing.T) {
 }
 
 func Benchmark_ConcurrentBasic(b *testing.B) {
-	const n = 100000
 	l := NewSkipList(100000000)
 	var wg sync.WaitGroup
 	key := func(i int) []byte {
 		return []byte(fmt.Sprintf("Key%05d", i))
 	}
-	for i := 0; i < n; i++ {
+	for i := 0; i < b.N; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -157,7 +155,7 @@ func Benchmark_ConcurrentBasic(b *testing.B) {
 	wg.Wait()
 
 	// Check values. Concurrent reads.
-	for i := 0; i < n; i++ {
+	for i := 0; i < b.N; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
