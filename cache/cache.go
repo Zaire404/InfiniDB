@@ -111,7 +111,6 @@ func (c *Cache) get(key interface{}) (interface{}, bool) {
 		return nil, false
 	}
 
-	// 如果找到了key对应的element，获取到对应的item
 	item := element.Value.(*storeItem)
 
 	// if the key is not truely in the cache
