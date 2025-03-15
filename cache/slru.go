@@ -52,17 +52,21 @@ func (slru *SLRU) get(ele *list.Element) *storeItem {
 		return item
 	}
 
-	// swap the last element of protected with the element of probation
-	lastElement := slru.protected.Back()
-	lastItem := lastElement.Value.(*storeItem)
+	// Swap between probation and protected when protected is full.
+	lastProtectedElement := slru.protected.Back()
+	lastItem := lastProtectedElement.Value.(*storeItem)
+	// Remove both items temporarily from the mapping.
 	delete(slru.data, item.keyHash)
 	delete(slru.data, lastItem.keyHash)
+	// Swap values between probation's element and the last protected element.
 	ele.Value = lastItem
-	lastElement.Value = item
+	lastProtectedElement.Value = item
+	// Reassign the mapping.
 	slru.data[lastItem.keyHash] = ele
-	slru.data[item.keyHash] = lastElement
+	slru.data[item.keyHash] = lastProtectedElement
+
 	slru.probation.MoveToFront(ele)
-	slru.protected.MoveToFront(lastElement)
+	slru.protected.MoveToFront(lastProtectedElement)
 	return item
 }
 
