@@ -895,7 +895,7 @@ func (lh *levelHandler) serachLn(key []byte) (*util.Entry, error) {
 	// 	return lh.tables[index].Search(key)
 	// }
 	for i := len(lh.tables) - 1; i >= 0; i-- {
-		// 每个table都会记录各自的minkey和maxkey，如果key在[minKey,maxKey]区间内就会返回
+		// every table will record its own minKey and maxKey, if key is in [minKey,maxKey] range, it will return
 		if bytes.Compare(key, lh.tables[i].sst.MinKey()) > -1 &&
 			bytes.Compare(key, lh.tables[i].sst.MaxKey()) < 1 {
 			// log.Logger.Debugf("key: %s, tableIndex: %d", key, lh.tables[i].fid)

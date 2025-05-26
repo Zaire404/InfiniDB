@@ -112,6 +112,7 @@ func (lsm *LSM) Set(entry *util.Entry) error {
 func (lsm *LSM) Get(key []byte) (*util.Entry, error) {
 	lsm.closer.AddRunning(1)
 	defer lsm.closer.Done()
+	// TODO: cache
 	entry, err := lsm.memTable.get(key)
 	if err == nil {
 		return entry, nil

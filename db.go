@@ -59,7 +59,7 @@ func (db *DB) Get(key []byte) (*util.Entry, error) {
 		return nil, ErrEmptyKey
 	}
 	entry, err := db.lsm.Get(key)
-	if err == nil && entry.ValueStruct.Value == nil {
+	if err == nil && len(entry.ValueStruct.Value) == 0 {
 		return nil, ErrKeyNotFound
 	}
 	if util.IsValuePtr(entry) {

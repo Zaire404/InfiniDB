@@ -33,6 +33,6 @@ func DefaultOptions(path string) Options {
 		CompactThreadCount:           2, // Run at least 2 compactors. Zero-th compactor prioritizes L0.
 		NumLevelZeroTables:           5,
 		BloomFilterFalsePositiveRate: 0.01,
-		BlockSize:                    4 * 1024,
+		BlockSize:                    512,
 	}
 }

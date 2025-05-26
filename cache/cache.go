@@ -68,8 +68,8 @@ func (c *Cache) set(key, value interface{}) {
 		return
 	}
 
-	vitem := c.slru.victim()
-	if vitem == nil {
+	victim := c.slru.victim()
+	if victim == nil {
 		c.slru.add(evictedItem)
 		return
 	}
@@ -82,7 +82,7 @@ func (c *Cache) set(key, value interface{}) {
 
 	// if the key is in the filter, we need to check the count-min sketch
 	// to see if the key need to be replaced
-	vcount := c.cmSketch.GetEstimate(vitem.keyHash)
+	vcount := c.cmSketch.GetEstimate(victim.keyHash)
 	ocount := c.cmSketch.GetEstimate(evictedItem.keyHash)
 
 	// if the count of the victim is larger than the count of the evicted item
@@ -113,7 +113,7 @@ func (c *Cache) get(key interface{}) (interface{}, bool) {
 
 	item := element.Value.(*storeItem)
 
-	// if the key is not truely in the cache
+	// if the key is not truly in the cache
 	if item.conflict != conflictHash {
 		c.filter.Allow(uint32(keyHash))
 		c.cmSketch.Add(keyHash)

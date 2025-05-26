@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/Zaire404/InfiniDB/error"
 	"github.com/Zaire404/InfiniDB/util"
 )
 
@@ -62,6 +63,9 @@ func TestAPI(t *testing.T) {
 		t.Log(e)
 	}
 	if err := db.Del([]byte("key")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Get([]byte("key")); err != ErrKeyNotFound {
 		t.Fatal(err)
 	}
 }
