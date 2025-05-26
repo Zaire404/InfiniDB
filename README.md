@@ -51,6 +51,7 @@ entry, err := db.Get([]byte("key"))
 ### Setting a value
 To set a value in the database, use the `Set()` function:
 ```go
+import "github.com/Zaire404/InfiniDB/util"
 err := db.Set(&util.Entry{Key: []byte("key"), ValueStruct: util.ValueStruct{Value: []byte("value")}})
 ...
 ```
