@@ -126,7 +126,7 @@ func (mf *ManifestFile) addChanges(changes []*proto.ManifestChange) error {
 			return err
 		}
 	} else {
-		// i dont know why we need to seek there, but truely we need to seek there to deal with the bugs
+		// i dont know why we need to seek there, but truly we need to seek there to deal with the bugs
 		if _, err := mf.file.Seek(0, io.SeekEnd); err != nil {
 			return err
 		}
